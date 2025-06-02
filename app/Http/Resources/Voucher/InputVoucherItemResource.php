@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Voucher;
 
+use App\Http\Resources\Document\DocumentResource;
 use App\Http\Resources\Item\ItemResource;
 use App\Http\Resources\Stock\StockResource;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class InputVoucherItemResource extends JsonResource
             'price' => $this->price / 100,
             'value' => ($this->price * $this->count) / 100,
             'notes' => $this->notes,
+            //
             //'outputItems' => $this->outputItems,
             //'countOutputItems' => $this->outputItems->sum('count'),
         ];

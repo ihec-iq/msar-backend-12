@@ -9,7 +9,7 @@ use App\Http\Resources\Store\StoreSummationResourceCollection;
 use App\Models\ItemStoreView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 class StoreController extends Controller
 {
@@ -74,8 +74,7 @@ class StoreController extends Controller
         if (!$request->isNotFilled('description') && $request->description != '') {
             $filter_billOR[] = ['description', 'like', '%' . $request->description . '%'];
         }
-        $data = $data->where($filter_bill)->paginate($limit);
-        ;
+        $data = $data->where($filter_bill)->paginate($limit);;
         // if (! $request->isNotFilled('isIn') && $request->isIn != -1) {
         //     $filter_bill[] = ['is_in', $request->isIn];
         // }
@@ -114,12 +113,16 @@ class StoreController extends Controller
 
     public function showItemHistory(Request $request, string $id)
     {
+        Log::info($request);
         $filter_bill = [];
         $filter_billOR = [];
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
 
         if (!$request->isNotFilled('item') && $request->item != '') {
             $filter_bill[] = ['items.name', 'like', '%' . $request->item . '%'];
+        }
+        if (!$request->isNotFilled('sectionId') && $request->sectionId != '') {
+            $filter_bill[] = ['employees.section_id', '=',   $request->sectionId];
         }
         if (!$request->isNotFilled('description') && $request->description != '') {
             $filter_billOR[] = ['input_voucher_items.description', 'like', '%' . $request->description . '%'];

@@ -21,7 +21,7 @@ class VoucherItemHistoryResource extends JsonResource
         $type = null;
         if ($this->voucher_item_historiable_type == 'App\\Models\\InputVoucherItem') {
             //$item = new InputVoucherItemResource($this->voucher_item_historiable);
-            $type = 'Init';
+            $type = 'سند ادخال';
             $item = [
                 'idVoucher' => $this->voucher_item_historiable->input_voucher_id,
                 'date' => $this->voucher_item_historiable->Voucher->date,
@@ -31,7 +31,7 @@ class VoucherItemHistoryResource extends JsonResource
             ];
         } elseif ($this->voucher_item_historiable_type == 'App\\Models\\OutputVoucherItem') {
             //$item = new OutputVoucherItemResource($this->voucher_item_historiable);
-            $type = 'In';
+            $type = 'سند تصدير';
             $item = [
                 'idVoucher' => $this->voucher_item_historiable->output_voucher_id,
                 'date' => $this->voucher_item_historiable->Voucher->date,
@@ -42,7 +42,7 @@ class VoucherItemHistoryResource extends JsonResource
 
         } elseif ($this->voucher_item_historiable_type == 'App\\Models\\RetrievalVoucherItem') {
             //$item = new OutputVoucherItemResource($this->voucher_item_historiable);
-            $type = 'Out';
+            $type = 'سند ارجاع';
             $item = [
                 'idVoucher' => $this->voucher_item_historiable->retrieval_voucher_id,
                 'date' => $this->voucher_item_historiable->Voucher->date,

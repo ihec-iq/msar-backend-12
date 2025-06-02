@@ -124,11 +124,11 @@ class ArchiveController extends Controller
     {
         $data = Archive::find($archive_id);
 
-        return $this->ok(DocumentResource::collection($data->documents));
+        return $this->ok(DocumentResource::collection($data->Documents));
     }
 
     public function update(Request $request, string $id)
-    { 
+    {
         $data = Archive::find($id);
         if ($data) {
             $data->title = $request->title;

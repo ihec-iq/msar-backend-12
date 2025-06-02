@@ -19,7 +19,13 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        $data = DocumentResource::collection(Document::all());
+        $data = DocumentResource::collection(Document::get());
+
+        return $this->ok($data);
+    }
+    public function last()
+    {
+        $data = new DocumentResource(Document::latest()->first());
 
         return $this->ok($data);
     }

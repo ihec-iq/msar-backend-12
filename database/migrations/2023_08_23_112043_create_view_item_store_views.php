@@ -28,18 +28,20 @@ return new class extends Migration
         `item_categories`.`name` as `itemCategoryName`,
         `stocks`.`id` as `stockId`,
         `stocks`.`name` as `stockName`,
-        IFNULL(SUM(input_voucher_items.count),0) as inValue,
-        IFNULL(SUM(output_voucher_items.count),0) as outValue,
-        IFNULL(SUM(ReIn.count),0) as reInValue,
-        IFNULL(SUM(ReOut.count),0) as reOutValue
+        employees.id as `employeeId`,employees.name as `employeeName`,
+        IFNULL(SUM(input_voucher_items.count),0) as `countIn`,
+        IFNULL(SUM(output_voucher_items.count),0) as `countOut`,
+        IFNULL(SUM(ReIn.count),0) as `countReIn`,
+        IFNULL(SUM(ReOut.count),0) as `countReOut`
         from `input_voucher_items`
         inner join `input_vouchers` on `input_voucher_items`.`input_voucher_id` = `input_vouchers`.`id`
         inner join `stocks` on `input_vouchers`.`stock_id` = `stocks`.`id`
         inner join `items` on `input_voucher_items`.`item_id` = `items`.`id`
         inner join `item_categories` on `items`.`item_category_id` = `item_categories`.`id`
         left join `output_voucher_items` on `input_voucher_items`.`id`=`output_voucher_items`.`input_voucher_item_id`
-        left join `retrieval_voucher_items` ReIn on `input_voucher_items`.`id`=ReIn.`input_voucher_item_id` and  ReIn.retrieval_voucher_item_type_id in (1,2)
-        left join `retrieval_voucher_items` ReOut on `input_voucher_items`.`id`=ReOut.`input_voucher_item_id` and  ReOut.retrieval_voucher_item_type_id not in (1,2)
+        left join `employees` on `employees`.`id`=`output_voucher_items`.`employee_id`
+        left join `retrieval_voucher_items` ReIn on `input_voucher_items`.`id`=ReIn.`input_voucher_item_id` and  ReIn.retrieval_voucher_item_type_id in (1)
+        left join `retrieval_voucher_items` ReOut on `input_voucher_items`.`id`=ReOut.`input_voucher_item_id` and  ReOut.retrieval_voucher_item_type_id not in (1)
         group by
         `input_voucher_items`.`id`,
         `items`.`name`,`items`.`id`,
@@ -51,7 +53,8 @@ return new class extends Migration
         `item_categories`.`id`,
         `item_categories`.`name`,
         `stocks`.`id`,
-        `stocks`.`name`;
+        `stocks`.`name`,
+        employees.id,employees.name
         ');
     }
 

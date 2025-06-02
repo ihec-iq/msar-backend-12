@@ -68,7 +68,8 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
     Route::prefix('/inputVoucherItem')->group(function () {
         Route::get('/', [InputVoucherItemController::class, 'index']);
         Route::get('/getAvailableItemsVSelect/{storeId}', [InputVoucherItemController::class, 'getAvailableItemsVSelect']);
-        Route::get('/getAllItemsVSelect/{storeId}', [InputVoucherItemController::class, 'getAllItemsVSelect']);
+        Route::get('/getAvailableItemsVSelectByEmployeeId/{employeeId}', [InputVoucherItemController::class, 'getAvailableItemsVSelectByEmployeeId']);
+         Route::get('/getAllItemsVSelect/{storeId}', [InputVoucherItemController::class, 'getAllItemsVSelect']);
         Route::get('/filter', [InputVoucherItemController::class, 'filter']);
         Route::get('/{inputVoucherItem}', [InputVoucherItemController::class, 'show']);
         Route::post('/store', [InputVoucherItemController::class, 'store']);
@@ -93,7 +94,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
         Route::delete('/delete/{id}', [OutputVoucherItemController::class, 'destroy']);
     });
     Route::prefix('/retrievalVoucher')->group(function () {
-        Route::get('/', [RetrievalVoucherController::class, 'index']);
+        Route::get('', [RetrievalVoucherController::class, 'index']);
         Route::get('/filter', [RetrievalVoucherController::class, 'filter']);
         Route::get('/{retrievalVoucher}', [RetrievalVoucherController::class, 'show']);
         Route::post('/store', [RetrievalVoucherController::class, 'store']);
@@ -101,7 +102,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
         Route::delete('/delete/{id}', [RetrievalVoucherController::class, 'destroy']);
     });
     Route::prefix('/retrievalVoucherItem')->group(function () {
-        Route::get('/', [RetrievalVoucherItemController::class, 'index']);
+        Route::get('', [RetrievalVoucherItemController::class, 'index']);
         Route::get('/filter', [RetrievalVoucherItemController::class, 'filter']);
         Route::get('/{retrievalVoucherItem}', [RetrievalVoucherItemController::class, 'show']);
         Route::post('/store', [RetrievalVoucherItemController::class, 'store']);
@@ -109,11 +110,11 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
         Route::delete('/delete/{id}', [RetrievalVoucherItemController::class, 'destroy']);
     });
     Route::prefix('/retrievalVoucherItemType')->group(function () {
-        Route::get('/', [RetrievalVoucherItemTypeController::class, 'index']);
+        Route::get('', [RetrievalVoucherItemTypeController::class, 'index']);
     });
 
     Route::prefix('/directVoucher')->group(function () {
-        Route::get('/', [DirectVoucherController::class, 'index']);
+        Route::get('', [DirectVoucherController::class, 'index']);
         Route::get('/filter', [DirectVoucherController::class, 'filter']);
         Route::get('/{directVoucher}', [DirectVoucherController::class, 'show']);
         Route::post('/store', [DirectVoucherController::class, 'store']);
@@ -121,7 +122,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
         Route::delete('/delete/{id}', [DirectVoucherController::class, 'destroy']);
     });
     Route::prefix('/directVoucherItem')->group(function () {
-        Route::get('/', [DirectVoucherItemController::class, 'index']);
+        Route::get('', [DirectVoucherItemController::class, 'index']);
         Route::get('/getItemsForVSelect', [DirectVoucherItemController::class, 'getItemsForVSelect']);
         Route::get('/filter', [DirectVoucherItemController::class, 'filter']);
         Route::get('/{directVoucherItem}', [DirectVoucherItemController::class, 'show']);
@@ -131,7 +132,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
     });
 
     Route::prefix('/voucherItemHistory')->group(function () {
-        Route::get('/', [VoucherItemHistoryController::class, 'index']);
+        Route::get('', [VoucherItemHistoryController::class, 'index']);
         Route::get('/filter', [VoucherItemHistoryController::class, 'filter']);
         Route::get('/{outputVoucherItem}', [VoucherItemHistoryController::class, 'show']);
     });

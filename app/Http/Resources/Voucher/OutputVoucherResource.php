@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Voucher;
 
+use App\Http\Resources\Document\DocumentResource;
 use App\Http\Resources\Employee\EmployeeBigLiteResource;
 use App\Http\Resources\Stock\StockResource;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class OutputVoucherResource extends JsonResource
             'Employee' => new EmployeeBigLiteResource($this->Employee),
             'Stock' => new StockResource($this->Stock),
             'itemsCount' => count($this->Items),
+            'FilesDocument' => DocumentResource::collection($this->Documents),
         ];
     }
 }

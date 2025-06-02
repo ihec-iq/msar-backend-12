@@ -30,6 +30,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/archiveSy
 
     Route::prefix('/document')->group(function () {
         Route::get('/', [DocumentController::class, 'index']);
+        Route::get('/last', [DocumentController::class, 'last']);
         Route::get('/{id}', [DocumentController::class, 'show']);
         // Route::post('/store', [DocumentController::class, 'store']);
         Route::post('/{archive_id}/store_multi', [DocumentController::class, 'store_multi']);

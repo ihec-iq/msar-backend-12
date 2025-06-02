@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Voucher;
 
+use App\Http\Resources\Document\DocumentResource;
 use App\Http\Resources\Stock\StockResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,10 +26,11 @@ class InputVoucherResource extends JsonResource
             'notes' => $this->notes,
             'State' => new InputVoucherStateResource($this->State),
             'Stock' => new StockResource($this->Stock),
-            'items' => InputVoucherItemResource::collection($this->Items),
+            'Items' => InputVoucherItemResource::collection($this->Items),
             'signaturePerson' => $this->signature_person,
             'requestedBy' => $this->requested_by,
             'itemsCount' => count($this->Items),
+            'FilesDocument' => DocumentResource::collection($this->Documents),
         ];
     }
 }

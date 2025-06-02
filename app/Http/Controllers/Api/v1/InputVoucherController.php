@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Voucher\InputVoucherStoreRequest;
+use App\Http\Resources\Document\DocumentResource;
 use App\Http\Resources\Voucher\InputVoucherResource;
 use App\Http\Resources\Voucher\InputVoucherResourceCollection;
 use App\Models\InputVoucher;
 use App\Models\InputVoucherItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class InputVoucherController extends Controller
 {
@@ -76,6 +78,15 @@ class InputVoucherController extends Controller
         ]);
         $arrayItems = json_decode($request->Items, true);
         $arrayItemInsert = [];
+        if ($request->hasfile('FilesDocument')) {
+            $document = new DocumentController();
+            $document->store_multi(
+                request: $request,
+                documentable_id: $data->id,
+                documentable_type: InputVoucher::class,
+                pathFolder: InputVoucher::class
+            );
+        }
         foreach ($arrayItems as $key => $item) {
             //{"id":0,"input_voucher_id":0,"item":{"name":"","id":0,"code":"","description":"","itemCategory":{"id":0,"name":""},"measuringUnit":""},"stock":{"name":"","id":1},"description":"66666666","count":0,"price":0,"value":0,"notes":""}
             $newItem = new InputVoucherItem();
@@ -94,6 +105,7 @@ class InputVoucherController extends Controller
 
     public function show(InputVoucher $inputVoucher)
     {
+        //return  $inputVoucher;
         return $this->ok(new InputVoucherResource($inputVoucher));
     }
 
@@ -115,6 +127,15 @@ class InputVoucherController extends Controller
 
         $arrayItems = json_decode($request->Items, true);
         $arrayNewItemInsert = [];
+        if ($request->hasfile('FilesDocument')) {
+            $document = new DocumentController();
+            $document->store_multi(
+                request: $request,
+                documentable_id: $inputVoucher->id,
+                documentable_type: InputVoucher::class,
+                pathFolder: InputVoucher::class
+            );
+        }
         foreach ($arrayItems as $key => $item) {
             // item schema {"id":0,"input_voucher_id":0,"item":{"name":"","id":0,"code":"","description":"","itemCategory":{"id":0,"name":""},"measuringUnit":""},"stock":{"name":"","id":1},"description":"66666666","count":0,"price":0,"value":0,"notes":""}
             if ($item['id'] > 0) {
@@ -148,7 +169,12 @@ class InputVoucherController extends Controller
 
         return $this->ok(new InputVoucherResource($inputVoucher));
     }
+    public function show_documents(string $id)
+    {
+        $data = InputVoucher::find($id);
 
+        return $this->ok(DocumentResource::collection($data->Documents));
+    }
     public function destroy(string $id)
     {
         $data = InputVoucher::find($id);

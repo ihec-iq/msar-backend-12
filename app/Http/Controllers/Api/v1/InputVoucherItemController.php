@@ -28,43 +28,10 @@ class InputVoucherItemController extends Controller
     /**
      * Display a Items For VSelect that show only available items.
      */
-    public function getAvailableItemsVSelect($storeId = "0")
+    public function getAvailableItemsVSelect(Request $request)
     {
-        //region "OLD CODE"
-        // $results = DB::table('input_voucher_items')
-        //     ->select(
-        //         'input_voucher_items.id as id',
-        //         'items.name as itemName',
-        //         'items.code as code',
-        //         'items.description as ItemDescription',
-        //         'input_voucher_items.description as description',
-        //         'input_voucher_items.notes as notes',
-        //         'input_voucher_items.price as price',
-        //         'item_categories.name as itemCategoryName',
-        //         'stocks.name as stockName',
-        //         DB::raw('IFNULL(SUM(input_voucher_items.count),0) as inValue'),
-        //         DB::raw('IFNULL(SUM(output_voucher_items.count),0) as outValue')
-        //     )
-        //     ->join('items', 'input_voucher_items.item_id', '=', 'items.id')
-        //     ->join('item_categories', 'items.item_category_id', '=', 'item_categories.id')
-        //     ->join('stocks', 'input_voucher_items.stock_id', '=', 'stocks.id')
-        //     ->leftJoin('output_voucher_items', 'input_voucher_items.id', '=', 'output_voucher_items.input_voucher_item_id')
-        //     ->groupBy([
-        //         'input_voucher_items.id',
-        //         'items.name',
-        //         'items.code',
-        //         'items.description',
-        //         'input_voucher_items.description',
-        //         'input_voucher_items.notes',
-        //         'input_voucher_items.price',
-        //         'item_categories.name',
-        //         'stocks.name',
-        //     ])
-        //     ->having('inValue', '>', 0)
-        //     ->get();
-        //->toSql(); return $results;
-        //endregion
-        $results = ItemStoreView::whereRaw('inValue-outValue>0')
+
+        $results = ItemStoreView::whereRaw('countIn-countOut countReIn-countReOut+ >0')
             ->select(
                 'id',
                 'itemId',
@@ -78,18 +45,48 @@ class InputVoucherItemController extends Controller
                 'itemCategoryName',
                 'stockId',
                 'stockName',
-                'inValue',
-                'outValue'
+                'countIn',
+                'countOut',
+                'countReIn',
+                'countReOut'
             );
-        if ($storeId <> "0")
-            $results = $results->whereRaw('stockId=' . $storeId);
+        if (isset($request->storeId) && $request->storeId != "0")
+            $results = $results->whereRaw('stockId=' . $request->storeId);
+        if (isset($request->employeeId) && $request->employeeId != "0")
+            $results = $results->whereRaw('employeeId=' . $request->employeeId);
         $results = $results->get();
         return $this->ok(InputVoucherItemVSelectResource::collection($results));
-
+    }
+    public function getAvailableItemsVSelectByEmployeeId($employeeId)
+    {
+        $results = ItemStoreView::whereRaw('countIn-`countOut` + countReIn-countReOut>0')
+            ->select(
+                'id',
+                'itemId',
+                'itemName',
+                'code',
+                'ItemDescription',
+                'description',
+                'notes',
+                'price',
+                'itemCategoryId',
+                'itemCategoryName',
+                'stockId',
+                'stockName',
+                'countIn',
+                'countOut',
+                'countReIn',
+                'countReOut'
+            );
+        if (isset($employeeId) && $employeeId != "0")
+            $results = $results->whereRaw('employeeId=' . $employeeId);
+        $results = $results->get();
+        return $this->ok(InputVoucherItemVSelectResource::collection($results));
     }
     public function getAllItemsVSelect($storeId = "0")
     {
-        $results = ItemStoreView::whereRaw('inValue-outValue>0 || (outValue>0 && inValue)')
+        Log::info($storeId);
+        $results = ItemStoreView::whereRaw('countIn-countOut>0 || (countOut>0 && countIn)')
             ->select(
                 'id',
                 'itemId',
@@ -103,14 +100,13 @@ class InputVoucherItemController extends Controller
                 'itemCategoryName',
                 'stockId',
                 'stockName',
-                'inValue',
-                'outValue'
+                'countIn',
+                'countOut'
             );
         if ($storeId <> "0")
             $results = $results->whereRaw('stockId=' . $storeId);
         $results = $results->get();
         return $this->ok(InputVoucherItemVSelectResource::collection($results));
-
     }
 
     public function filter(Request $request)
@@ -142,8 +138,9 @@ class InputVoucherItemController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     * InputVoucherItemRequest
      */
-    public function store(InputVoucherItemRequest $request)
+    public function store(Request $request)
     {
         $data = InputVoucherItem::create([
             'input_voucher_id' => $request->inputVoucherId,
@@ -168,8 +165,9 @@ class InputVoucherItemController extends Controller
 
     /**
      * Update the specified resource in storage.
+     * InputVoucherItemRequest
      */
-    public function update(InputVoucherItemRequest $request, InputVoucherItem $inputVoucherItem)
+    public function update(Request $request, InputVoucherItem $inputVoucherItem)
     {
 
         $inputVoucherItem->input_voucher_id = $request->inputVoucherId;

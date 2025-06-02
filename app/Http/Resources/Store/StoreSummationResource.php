@@ -4,6 +4,7 @@ namespace App\Http\Resources\Store;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use PhpParser\Node\Expr\Cast\Double;
 
 class StoreSummationResource extends JsonResource
 {
@@ -21,14 +22,15 @@ class StoreSummationResource extends JsonResource
             'itemName' => $this->itemName,
             'description' => $this->description,
             'code' => $this->code,
-            'description' => $this->itemDescription,
+            'descriptionItem' => $this->itemDescription,
             'stockName' => $this->stockName,
             'categoryName' => $this->itemCategoryName,
             'price' => $this->price / 100,
-            'in' => $this->inValue,
-            'out' => $this->outValue,
-            'reIn' => $this->reInValue,
-            'reOut' => $this->reOutValue
+            'count' => ((float) $this->countIn - (float) $this->countOut ) + ((float) $this->countReIn - (float) $this->countReOut) ,
+            'countIn' => (float)$this->countIn,
+            'countOut' => (float)$this->countOut,
+            'countReIn' => (float)$this->countReIn,
+            'countReOut' => (float)$this->countReOut
         ];
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class OutputVoucher extends Model
 {
@@ -13,6 +14,10 @@ class OutputVoucher extends Model
 
     protected $guarded = [];
 
+    public function Documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
+    }
     public function Items(): HasMany
     {
         return $this->hasMany(OutputVoucherItem::class)->orderBy('id', 'desc');

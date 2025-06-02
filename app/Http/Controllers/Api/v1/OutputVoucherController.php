@@ -67,6 +67,15 @@ class OutputVoucherController extends Controller
             'user_create_id' => auth()->user()->id,
             'user_update_id' => auth()->user()->id,
         ]);
+        if ($request->hasfile('FilesDocument')) {
+            $document = new DocumentController();
+            $document->store_multi(
+                request: $request,
+                documentable_id: $data->id,
+                documentable_type: OutputVoucher::class,
+                pathFolder: OutputVoucher::class
+            );
+        }
         $arrayItems = json_decode($request->Items, true);
         $arrayItemInsert = [];
         foreach ($arrayItems as $key => $item) {
@@ -112,7 +121,15 @@ class OutputVoucherController extends Controller
         $Stock = json_decode($request->Stock, true);
         $outputVoucher->stock_id = $Stock['id'];
         $outputVoucher->user_update_id = auth()->user()->id;
-
+        if ($request->hasfile('FilesDocument')) {
+            $document = new DocumentController();
+            $document->store_multi(
+                request: $request,
+                documentable_id: $outputVoucher->id,
+                documentable_type: OutputVoucher::class,
+                pathFolder: OutputVoucher::class
+            );
+        }
         $arrayItems = json_decode(json: $request->Items, associative: true);
         $arrayNewItemInsert = [];
         foreach ($arrayItems as $key => $item) {
@@ -159,7 +176,6 @@ class OutputVoucherController extends Controller
     {
         $data = OutputVoucher::find($id);
         $data->delete();
-
         return $this->ok(null);
     }
 }

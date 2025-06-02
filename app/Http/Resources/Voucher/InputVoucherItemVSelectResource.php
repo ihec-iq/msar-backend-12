@@ -28,18 +28,19 @@ class InputVoucherItemVSelectResource extends JsonResource
                 ],
                 'measuringUnit' => '',
             ],
+            'count' => $this->countIn - $this->countOut + $this->countReIn - $this->countReOut,
+            'countIn' => $this->countIn,
+            'countOut' => $this->countOut,
+            'countReIn' => $this->countReIn,
+            'countReOut' => $this->countReOut,
             'Stock' => [
                 'id' => $this->stockId,
                 'name' => $this->stockName,
             ],
             'description' => $this->description,
             'price' => $this->price / 100,
-            'count' => $this->inValue - $this->outValue,
-            'value' => ($this->price * ($this->inValue - $this->outValue)) / 100,
-            'inValue' => $this->inValue,
-            'outValue' => $this->outValue,
+            'value' => ($this->price * ($this->countIn - $this->countOut + $this->countReIn - $this->countReOut)) / 100,
             'notes' => $this->notes,
-            //'countOutputItems' => $this->inValue - $this->outValue,
         ];
     }
 }
