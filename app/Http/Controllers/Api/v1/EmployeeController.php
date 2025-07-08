@@ -68,8 +68,8 @@ class EmployeeController extends Controller
             $query->whereIn('id', $employeeType);
         });
         #endregion
-         $data =  $data->get();
-         return EmployeeBigLiteResource::collection($data);
+        $data =  $data->get();
+        return EmployeeBigLiteResource::collection($data);
         // $data = Cache::remember('getLite_employees', 60*60*24, function () use ($data) {
         //     return $data->get();
         // });
@@ -122,7 +122,7 @@ class EmployeeController extends Controller
             return $this->ok(new EmployeeResourceCollection($data));
         }
     }
-public function filterLite(Request $request)
+    public function filterLite(Request $request)
     {
         $filter_bill = [];
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
@@ -161,7 +161,7 @@ public function filterLite(Request $request)
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {
-            return $this->ok(new PaginatedResourceCollection ($data,EmployeeBigLiteResource::class));
+            return $this->ok(new PaginatedResourceCollection($data, EmployeeBigLiteResource::class));
         }
     }
     /**

@@ -20,6 +20,7 @@ Route::get(uri:'/check', action:function (): \Illuminate\Http\JsonResponse {
     return response()->json(data:    ['state' => 'ERP MSAR API running...']);
     ;
 });
+
 //region upload file to drive
 Route::get('/info', function () {
     return 'http://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'];

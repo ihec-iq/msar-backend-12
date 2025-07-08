@@ -25,7 +25,6 @@ Route::prefix('/employee')->middleware(['auth:sanctum'])->group(function () {
     Route::delete('/delete/{employee}', [EmployeeController::class, 'destroy']);
     Route::get('/bonus/check', [EmployeeController::class, 'bonusCheck']);
     Route::get('/bonus/calculate', [EmployeeController::class, 'bonusCalculate']);
-
 });
 Route::prefix('/employee_type')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/', [EmployeeTypeController::class, 'index']);
