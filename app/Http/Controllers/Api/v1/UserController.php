@@ -13,13 +13,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Opcodes\LogViewer\Logs\Log as LogsLog;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $data = UserResource::collection(User::all());
+        $data = UserResource::collection(User::orderByDesc('updated_at')->get());
 
         return $this->ok($data);
     }
@@ -46,8 +47,8 @@ class UserController extends Controller
             $data = $data->Where('section_id', $request->sectionId);
         }
 
-        $data = $data->paginate($limit);
-
+        $data = $data->orderBy('updated_at', 'desc')->paginate($limit);
+        Log::alert($data);
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {
@@ -57,47 +58,48 @@ class UserController extends Controller
 
     public function store(UserStoreRequest $request)
     {
-        $user_id = 1;
-        if (Auth::check()) {
-            $user_id = Auth::id();
-        }
-        $user = new User();
-        $user->active = false;
-        $user->active = false;
-        if (isset($request->user_type)) {
-            $user->user_type = $request->user_type;
-        }
-        // $user->invite_code=$this->generateNumber(6);
-        //
-        $user->name = $request->name;
-        $user->user_name = $request->user_name;
-        $user->email = $request->email;
-        $user->password = Hash::make($request->password);
-        $user->any_device = (isset($request->any_device) && $request->any_device != '') ? $request->any_device : 0;
-        $user->active = (isset($request->active) && $request->active != '') ? $request->active : 0;
-        if ($request->window_id == null) {
-            $user->window_id = 1;
-        } else {
-            $user->window_id = $request->window_id;
-        }
-        $user->user_id = $user_id;
-
         try {
-            $user->save();
-            //    if(isset($request->role_id)) $user->assignRole($request->role_id);
+            // ✅ تحديد الـ user_id (الذي قام بإنشاء المستخدم)
+            $creatorId = Auth::id() ?? 1;
 
-            $access_token = $user->createToken($request->email)->plainTextToken;
-            $user = User::find($user->id);
-            foreach ($request->roles as $role_id) {
-                (new RoleController())->set_role($role_id, $user->id);
+            // ✅ تجهيز بيانات المستخدم بشكل نظيف
+            $userData = [
+                'name'        => $request->name,
+                'user_name'   => $request->user_name,
+                'email'       => $request->email,
+                'password'    => Hash::make($request->password),
+                'user_type'   => $request->user_type ?? null,
+                'any_device'  => $request->boolean('any_device', false),
+                'active'      => $request->boolean('active', false),
+                'window_id'   => $request->window_id ?? 1,
+                'user_id'     => $creatorId,
+            ];
+
+            // ✅ إنشاء المستخدم
+            $user = User::create($userData);
+
+            // ✅ إصدار Access Token
+            $accessToken = $user->createToken($user->email)->plainTextToken;
+
+            // ✅ تحديث الأدوار إذا تم إرسالها
+            if (!empty($request->roles)) {
+                $roles = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
+                $user->syncRoles($roles);
             }
 
+            // ✅ إعادة المستخدم المحدث بعد إضافة الأدوار
+            $user->refresh();
+
             return $this->ok([
-                'user' => new UserResource($user),
-                'token' => $access_token,
+                'user'  => new UserResource($user),
+                'token' => $accessToken,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // يمكنك تفعيل هذا للسجل فقط:
+            // \Log::error('User Store Error: ' . $e->getMessage());
+
             return $this->error(__('general.saveUnsuccessfully'));
+            // أو لإظهار رسالة الخطأ للتصحيح:
             // return $this->error($e->getMessage(), __('general.saveUnsuccessfully'));
         }
     }
@@ -120,7 +122,7 @@ class UserController extends Controller
             //'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             // 'password' => ['nullable','required', 'confirmed', Rules\Password::defaults()],
         ]);
- 
+
         $user = User::find($user_id);
         if (!isset($user) || $user == null || $user == '') {
             return $this->error(__('general.saveUnsuccessfully'));
@@ -148,14 +150,20 @@ class UserController extends Controller
 
         $user->save();
         $access_token = $user->createToken($request->email)->plainTextToken;
+
         $user->roles()->detach();
-        foreach ($request->roles as $role_id) {
-            $user->assignRole($role_id);
+        if (!empty($request->roles)) {
+            $roles = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
+            $user->syncRoles($roles);
         }
-        return $this->ok([
-            'user' => new UserResource($user),
-            'token' => $access_token,
-        ], __('general.saveSuccessfully'));
+
+        return $this->ok(
+            [
+                'user' => new UserResource($user),
+                'token' => $access_token,
+            ],
+            __('general.saveSuccessfully')
+        );
 
         //return $this->error(__('general.saveUnsuccessfully'));
     }
