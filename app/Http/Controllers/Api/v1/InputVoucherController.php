@@ -35,20 +35,18 @@ class InputVoucherController extends Controller
         $data = InputVoucher::orderBy('id', 'desc');
 
         if (! $request->isNotFilled('name') && $request->name != '') {
-            $data = $data->orWhere('number', 'like', '%'.$request->name.'%');
+            $data = $data->orWhere('number', 'like', '%' . $request->name . '%');
         }
         if (! $request->isNotFilled('name') && $request->name != '') {
-            $data = $data->orWhere('signature_person', 'like', '%'.$request->name.'%');
+            $data = $data->orWhere('signature_person', 'like', '%' . $request->name . '%');
         }
         if (! $request->isNotFilled('name') && $request->name != '') {
-            $data = $data->orWhere('notes', 'like', '%'.$request->name.'%');
-
+            $data = $data->orWhere('notes', 'like', '%' . $request->name . '%');
         }
         if (! $request->isNotFilled('issueDateFrom') && $request->issueDateFrom != '') {
             $data = $data->where('date', '>=', $request->issueDateFrom, 'and', 'date', '<=', $request->issueDateTo);
         }
-        $data = $data->paginate($limit);
-
+        $data = $data->withCount(['Documents', 'Items'])->paginate($limit);
         //return $data->toSql();
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));

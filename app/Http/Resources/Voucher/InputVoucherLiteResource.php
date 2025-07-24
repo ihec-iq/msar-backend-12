@@ -21,8 +21,8 @@ class InputVoucherLiteResource extends JsonResource
             'notes' => $this->notes,
             'state' => new InputVoucherStateResource($this->State),
             //'items' => InputVoucherItemResource::collection($this->Items),
-            'itemsCount' => count($this->Items),
-
+            'itemsCount' => (int) $this->items_count ,
+            'documentsCount' => (int) $this->documents_count,
             'signaturePerson' => $this->signature_person,
             'requestedBy' => $this->requested_by,
         ];
