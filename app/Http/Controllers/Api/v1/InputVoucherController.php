@@ -10,6 +10,7 @@ use App\Http\Resources\Voucher\InputVoucherResourceCollection;
 use App\Models\InputVoucher;
 use App\Models\InputVoucherItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class InputVoucherController extends Controller
@@ -38,9 +39,6 @@ class InputVoucherController extends Controller
             $data = $data->orWhere('number', 'like', '%' . $request->name . '%');
         }
         if (! $request->isNotFilled('name') && $request->name != '') {
-            $data = $data->orWhere('signature_person', 'like', '%' . $request->name . '%');
-        }
-        if (! $request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('notes', 'like', '%' . $request->name . '%');
         }
         if (! $request->isNotFilled('issueDateFrom') && $request->issueDateFrom != '') {
@@ -56,8 +54,29 @@ class InputVoucherController extends Controller
         }
     }
 
-    public function store(InputVoucherStoreRequest $request)
+    public function store(Request $request)
     {
+        $request->validate([
+            'number' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) use ($request) {
+                    $year = date('Y', strtotime($request->date));
+                    $exists = \App\Models\InputVoucher::where('number', $value)
+                        ->whereYear('date', $year)
+                        ->exists();
+                    if ($exists) {
+                        $fail(__('validation.unique', ['attribute' => $attribute]));
+                    }
+                },
+            ],
+            'date' => 'required|date',
+            'dateReceive' => 'nullable|date',
+            'dateBill' => 'nullable|date',
+            'numberBill' => 'nullable|string',
+            'requestedBy' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
         $State = json_decode($request->State, true);
         $Stock = json_decode($request->Stock, true);
         $data = InputVoucher::create([
@@ -68,11 +87,10 @@ class InputVoucherController extends Controller
             'date_receive' => $request->dateReceive,
             'input_voucher_state_id' => $State['id'],
             'requested_by' => $request->requestedBy,
-            'signature_person' => $request->signaturePerson,
             'notes' => $request->notes,
             'stock_id' => $Stock['id'],
-            'user_create_id' => auth()->user()->id,
-            'user_update_id' => auth()->user()->id,
+            'user_create_id' => Auth::user()->id,
+            'user_update_id' => Auth::user()->id,
         ]);
         $arrayItems = json_decode($request->Items, true);
         $arrayItemInsert = [];
@@ -107,8 +125,18 @@ class InputVoucherController extends Controller
         return $this->ok(new InputVoucherResource($inputVoucher));
     }
 
-    public function update(InputVoucherStoreRequest $request, InputVoucher $inputVoucher)
+    public function update(Request $request, InputVoucher $inputVoucher)
     {
+        $request->validate([
+            'number' => 'required|string|unique:input_vouchers,number,' . $inputVoucher->id,
+            'date' => 'required|date',
+            'dateReceive' => 'nullable|date',
+            'dateBill' => 'nullable|date',
+            'numberBill' => 'nullable|string',
+            'requestedBy' => 'nullable|string',
+            'notes' => 'nullable',
+        ]);
+        Log::alert($request);
         $inputVoucher->number = $request->number;
         $inputVoucher->date = $request->date;
         $inputVoucher->date_receive = $request->dateReceive;
@@ -119,9 +147,8 @@ class InputVoucherController extends Controller
         $Stock = json_decode($request->Stock, true);
         $inputVoucher->stock_id = $Stock['id'];
         $inputVoucher->requested_by = $request->requestedBy;
-        $inputVoucher->signature_person = $request->signaturePerson;
         $inputVoucher->notes = $request->notes;
-        $inputVoucher->user_update_id = auth()->user()->id;
+        $inputVoucher->user_update_id = Auth::user()->id;
 
         $arrayItems = json_decode($request->Items, true);
         $arrayNewItemInsert = [];

@@ -23,7 +23,7 @@ class InputVoucherItemResource extends JsonResource
             'Item' => new ItemResource($this->Item),
             'description' => $this->description,
             'count' => $this->count,
-            'date' => $this->Voucher->date,
+            'date' => $this->InputVoucher->date,
             'price' => $this->price / 100,
             'value' => ($this->price * $this->count) / 100,
             'notes' => $this->notes,

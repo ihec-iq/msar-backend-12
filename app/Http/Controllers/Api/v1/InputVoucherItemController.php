@@ -31,7 +31,7 @@ class InputVoucherItemController extends Controller
     public function getAvailableItemsVSelect(Request $request)
     {
 
-        $results = ItemStoreView::whereRaw('countIn-countOut countReIn-countReOut+ >0')
+        $results = ItemStoreView::whereRaw('countIn-countOut + countReIn-countReOut >0')
             ->select(
                 'id',
                 'itemId',
@@ -49,11 +49,10 @@ class InputVoucherItemController extends Controller
                 'countOut',
                 'countReIn',
                 'countReOut'
-            );
-        if (isset($request->storeId) && $request->storeId != "0")
-            $results = $results->whereRaw('stockId=' . $request->storeId);
+            ); 
         if (isset($request->employeeId) && $request->employeeId != "0")
             $results = $results->whereRaw('employeeId=' . $request->employeeId);
+        // Log::info($results->toSql());
         $results = $results->get();
         return $this->ok(InputVoucherItemVSelectResource::collection($results));
     }

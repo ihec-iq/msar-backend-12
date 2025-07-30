@@ -8,6 +8,7 @@ use App\Http\Requests\Item\ItemStoreRequest;
 use App\Http\Resources\Item\ItemResource;
 use App\Http\Resources\Item\ItemResourceCollection;
 use App\Models\Item;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -88,15 +89,22 @@ class ItemController extends Controller
         return $this->ok(new ItemResource($data));
     }
 
-    public function update(ItemStoreRequest $request, string $id)
+    public function update(Request $request, string $id)
     {
+        $request->validate([
+            'name' => 'required|string|unique:items,name,' . $id,
+            'code' => 'string|unique:items,code,' . $id . '|nullable',
+            'description' => 'string|nullable',
+            'category_id' => 'integer|exists:item_categories,id',
+            'measuringUnit' => 'string|nullable',
+        ]);
         $data = Item::find($id);
         $data->name = $request->name;
         $data->code = $request->code;
         $data->description = $request->description;
         $data->item_category_id = $request->category_id;
         $data->measuring_unit = $request->measuringUnit;
-        $data->user_update_id = auth()->user()->id;
+        $data->user_update_id = Auth::user()->id;
 
         $data->save();
 

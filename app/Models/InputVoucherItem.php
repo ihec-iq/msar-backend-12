@@ -13,7 +13,7 @@ class InputVoucherItem extends Model
 
     protected $guarded = [];
 
-    public function Voucher()
+    public function InputVoucher()
     {
         return $this->belongsTo(InputVoucher::class, 'input_voucher_id', 'id');
     }

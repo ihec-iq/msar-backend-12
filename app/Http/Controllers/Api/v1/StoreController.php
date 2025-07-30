@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Store\StoreItemHistoryResourceCollection;
 use App\Http\Resources\Store\StoreResourceCollection;
 use App\Http\Resources\Store\StoreSummationResourceCollection;
+use App\Models\InputVoucherItem;
 use App\Models\ItemStoreView;
+use App\Models\OutputVoucherItem;
+use App\Models\RetrievalVoucherItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,8 +23,38 @@ class StoreController extends Controller
     {
         //
     }
+    public function filter()
+    {
+        $results = DB::table('input_voucher_items as input_item')
+            ->leftJoin('items as item', 'input_item.item_id', '=', 'item.id')
+            ->leftJoin('input_vouchers as input_voucher', 'input_item.input_voucher_id', '=', 'input_voucher.id')
+            ->leftJoin('stocks as stock', 'input_voucher.stock_id', '=', 'stock.id')
+            ->leftJoin('output_voucher_items as output_item', 'input_item.id', '=', 'output_item.input_voucher_item_id')
+            ->leftJoin('retrieval_voucher_items as retrieval_in_item', function ($join) {
+                $join->on('input_item.id', '=', 'retrieval_in_item.input_voucher_item_id')
+                    ->where('retrieval_in_item.retrieval_voucher_item_type_id', '=', 1);
+            })
+            ->leftJoin('retrieval_voucher_items as retrieval_out_item', function ($join) {
+                $join->on('input_item.id', '=', 'retrieval_out_item.input_voucher_item_id')
+                    ->where('retrieval_out_item.retrieval_voucher_item_type_id', '!=', 1);
+            })
+            ->select([
+                'input_item.id as id',
+                'item.name as item_name',
+                'input_item.description as description',
+                'input_item.count as count_in',
+                DB::raw('COALESCE(output_item.count, 0) + COALESCE(retrieval_out_item.count, 0) as count_out'),
+                'input_item.price as price',
+                'stock.name as stock_in_name',
+                'input_voucher.date as date'
+            ])
+            ->orderByDesc('input_voucher.date')
+            ->get();
 
-    public function filter(Request $request)
+        return response()->json($results);
+    }
+
+    public function filter1(Request $request)
     {
         $filter_bill = [];
         $filter_billOR = [];
@@ -47,7 +80,10 @@ class StoreController extends Controller
                 'stocks.name as stockName',
                 'price',
                 DB::raw('sum(count) as count'),
-                DB::raw('sum(count) as "in"'),
+                DB::raw('sum(count) as "countIn"'),
+                DB::raw('sum(count) as "countReIn"'),
+                DB::raw('sum(count) as "countOut"'),
+                DB::raw('sum(count) as "countReOut"'),
                 DB::raw('0 as "out"')
             )
             ->groupBy(['items.name', 'items.id', 'stocks.name', 'description', 'price'])

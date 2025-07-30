@@ -28,10 +28,7 @@ class DirectVoucherController extends Controller
 
         if (! $request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('number', 'like', '%'.$request->name.'%');
-        }
-        if (! $request->isNotFilled('name') && $request->name != '') {
-            $data = $data->orWhere('signature_person', 'like', '%'.$request->name.'%');
-        }
+        } 
         if (! $request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('notes', 'like', '%'.$request->name.'%');
         }
@@ -55,8 +52,7 @@ class DirectVoucherController extends Controller
         $data = DirectVoucher::create([
             'number' => $request->number,
             'date' => $request->date,
-            'employee_id' => $request->employeeRequestId,
-            'signature_person' => $request->signaturePerson,
+            'employee_id' => $request->employeeRequestId, 
             'notes' => $request->notes,
             'user_create_id' => auth()->user()->id,
             'user_update_id' => auth()->user()->id,
@@ -93,8 +89,7 @@ class DirectVoucherController extends Controller
     {
         $directVoucher->number = $request->number;
         $directVoucher->date = $request->date;
-        $directVoucher->employee_id = $request->employeeRequestId;
-        $directVoucher->signature_person = $request->signaturePerson;
+        $directVoucher->employee_id = $request->employeeRequestId; 
         $directVoucher->notes = $request->notes;
         $directVoucher->user_update_id = auth()->user()->id;
 

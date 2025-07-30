@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        //php artisan migrate:refresh --path=database/migrations/2023_06_14_064329_create_output_voucher_items_table.php
+
         Schema::create('output_voucher_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('output_voucher_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
