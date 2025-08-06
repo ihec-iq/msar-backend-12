@@ -7,6 +7,7 @@ use App\Models\InputVoucher;
 use App\Models\InputVoucherItem;
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\Stock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -24,18 +25,10 @@ class InputVoucherExcelSeeder extends Seeder
             return;
         }
 
-        // حذف البيانات القديمة
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         InputVoucherItem::truncate();
         InputVoucher::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
-        // تعطيل تحقق المفاتيح الخارجية مؤقتًا
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Item::truncate();
-        ItemCategory::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
 
         Log::build(['driver' => 'single', 'path' => $logPath])
             ->info("🗑️ All previous input vouchers and items deleted.");
@@ -50,14 +43,20 @@ class InputVoucherExcelSeeder extends Seeder
             $rows = $sheet->toArray(null, true, true, true);
 
             if (empty($rows)) {
-                Log::build(['driver' => 'single', 'path' => $logPath])
-                    ->warning("Sheet '$sheetName' is empty. Skipping...");
+                Log::warning("⚠️ Sheet '$sheetName' is empty. Skipping...");
                 continue;
             }
 
-            $firstRow = reset($rows);
-            $header = array_map('strtolower', array_map('trim', $firstRow));
-            unset($rows[array_key_first($rows)]);
+            $firstRowKey = array_key_first($rows);
+            $headerRow = $rows[$firstRowKey];
+
+            if (!is_array($headerRow)) {
+                Log::warning("⚠️ Sheet '$sheetName' has no valid header. Skipping...");
+                continue;
+            }
+
+            $header = array_map('strtolower', array_map('trim', array_values($headerRow)));
+            unset($rows[$firstRowKey]);
 
             $data = collect($rows)->map(function ($row) use ($header) {
                 return array_combine($header, array_values($row));
@@ -66,58 +65,84 @@ class InputVoucherExcelSeeder extends Seeder
             $allData = $allData->merge($data);
         }
 
-        $grouped = $allData->groupBy('number');
+        $grouped = $allData->filter(function ($row) use ($logPath) {
+            if (empty($row['date'])) {
+                Log::build(['driver' => 'single', 'path' => $logPath])
+                    ->warning("⚠️ Skipped row due to missing date: " . json_encode($row));
+                return false;
+            }
+            if (empty($row['number'])) {
+                $row['number'] = '0'; // Default to 0 if number is missing
+            }
+            try {
+                $parsed = $this->convertDate($row['date'], false);
+                return $parsed !== null;
+            } catch (\Exception $e) {
+                Log::build(['driver' => 'single', 'path' => $logPath])
+                    ->warning("⚠️ Skipped row with invalid date format: " . $row['date']);
+                return false;
+            }
+        })->groupBy(function ($row) {
+            $number = trim($row['number'] ?? '0');
+            $date = $this->convertDate($row['date'], false);
+            $year = Carbon::parse($date)->format('Y');
+            return $number . '_' . $year;
+        });
 
         $success = 0;
         $failed = 0;
 
-        foreach ($grouped as $number => $entries) {
+        foreach ($grouped as $groupKey => $entries) {
+            [$number, $year] = explode('_', $groupKey);
             $firstRow = $entries->first();
 
+            $stockName = trim($firstRow['stock'] ?? 'Default');
+            $stock = Stock::firstOrCreate(['name' => $stockName]);
+
+            $date = $this->convertDate($firstRow['date']);
+
             $voucher = InputVoucher::create([
-                'number' => $number,
-                'date' => $this->formatDate($firstRow['date'] ?? now()),
+                'number' => $number ,
+                'date' => $date,
                 'notes' => $firstRow['notes'] ?? null,
-                'stock_id' => $firstRow['stock_id'] ?? 1,
+                'stock_id' => $stock->id,
                 'input_voucher_state_id' => ($firstRow['date_gov'] ?? '') === 'مستلم' ? 3 : 1,
-                'date_receive' => $this->formatDate($firstRow['date'] ?? now()),
-                'date_bill' => $this->formatDate($firstRow['date'] ?? now()),
+                'date_receive' => $date,
+                'date_bill' => $date,
                 'user_create_id' => 1,
                 'user_update_id' => 1,
             ]);
 
-            foreach ($entries as $i => $entry) {
+            foreach ($entries as $entry) {
                 $itemName = trim($entry['name'] ?? '');
-                $categoryName = trim($entry['categroy'] ?? 'غير مصنف');
+                $categoryName = trim($entry['category'] ?? 'Other');
 
-                $item = Item::where('name', $itemName)->first();
+                if (empty($itemName)) {
+                    $failed++;
+                    Log::build(['driver' => 'single', 'path' => $logPath])
+                        ->warning("❌ Empty item name in voucher number $number-$year. Skipping...");
+                    continue;
+                }
 
-                if (!$item) {
-                    $category = ItemCategory::firstOrCreate(
-                        ['name' => $categoryName],
-                        ['user_create_id' => 1, 'user_update_id' => 1]
-                    );
+                $category = ItemCategory::firstOrCreate(['name' => $categoryName]);
 
-                    $item = Item::create([
-                        'name' => mb_substr($itemName, 0, 255),
-                        'code' => null,
-                        'description' => null,
+                $item = Item::firstOrCreate(
+                    ['name' => $itemName],
+                    [
+                        'code' => $entry['code'] ?? null,
                         'item_category_id' => $category->id,
-                        'measuring_unit' => null,
+                        'measuring_unit' => 'unit',
                         'user_create_id' => 1,
                         'user_update_id' => 1,
-                    ]);
-
-                    Log::build(['driver' => 'single', 'path' => $logPath])
-                        ->info("🆕 Created item '$itemName' under category '$categoryName'");
-                }
+                    ]
+                );
 
                 InputVoucherItem::create([
                     'input_voucher_id' => $voucher->id,
                     'item_id' => $item->id,
                     'count' => $entry['count'] ?? 0,
-                    'price' => $entry['price'] * 10 ?? 0,
-                    'value' => $entry['total'] * 10  ?? 0,
+                    'price' => $entry['price']*100 ?? 0,
+                    'value' => $entry['total']*100 ?? 0,
                     'notes' => $entry['notes'] ?? null,
                 ]);
 
@@ -125,25 +150,29 @@ class InputVoucherExcelSeeder extends Seeder
             }
         }
 
-        Log::build(['driver' => 'single', 'path' => $logPath])
-            ->info("✅ Finished: $success items imported, $failed failed.");
+        Log::info("✅ Finished: $success items imported, $failed failed.");
         echo "✅ Done. $success items imported, $failed failed.\n";
         echo "📄 Log file: $logPath\n";
     }
 
-    private function formatDate($value)
+    private function convertDate($value, $returnNowIfInvalid = true): ?string
     {
-        if (!$value) return now();
+        $formats = ['d-m-Y', 'd/m/Y'];
+        $value = trim($value);
 
-        try {
-            if ($value instanceof \DateTime) {
-                return Carbon::instance($value)->format('Y-m-d');
+        foreach ($formats as $format) {
+            try {
+                return Carbon::createFromFormat($format, $value)->format('Y-m-d');
+            } catch (\Exception $e) {
+                continue;
             }
-
-            return Carbon::parse($value)->format('Y-m-d');
-        } catch (\Exception $e) {
-            Log::error("❌ Invalid date format: " . json_encode($value));
-            return now(); // fallback
         }
+
+        if ($returnNowIfInvalid) {
+            Log::warning("❌ Invalid date: '$value'. Using today's date.");
+            return now()->format('Y-m-d');
+        }
+
+        return null;
     }
 }

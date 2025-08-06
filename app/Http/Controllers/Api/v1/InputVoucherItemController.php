@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Voucher\InputVoucherItemRequest;
 use App\Http\Resources\Voucher\InputVoucherItemHistoryResource;
 use App\Http\Resources\Voucher\InputVoucherItemResource;
 use App\Http\Resources\Voucher\InputVoucherItemResourceCollection;
@@ -11,7 +10,6 @@ use App\Http\Resources\Voucher\InputVoucherItemVSelectResource;
 use App\Models\InputVoucherItem;
 use App\Models\ItemStoreView;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class InputVoucherItemController extends Controller
@@ -25,12 +23,8 @@ class InputVoucherItemController extends Controller
         return $this->ok(InputVoucherItemResource::collection(InputVoucherItem::all()));
     }
 
-    /**
-     * Display a Items For VSelect that show only available items.
-     */
-    public function getAvailableItemsVSelect(Request $request)
+    public function getAvailableItemsVSelect2(Request $request)
     {
-
         $results = ItemStoreView::whereRaw('countIn-countOut + countReIn-countReOut >0')
             ->select(
                 'id',
@@ -49,11 +43,54 @@ class InputVoucherItemController extends Controller
                 'countOut',
                 'countReIn',
                 'countReOut'
-            ); 
+            );
+
+
         if (isset($request->employeeId) && $request->employeeId != "0")
             $results = $results->whereRaw('employeeId=' . $request->employeeId);
+        if (isset($request->itemName) && $request->itemName != "")
+            $results = $results->whereRaw('itemName', 'like', $request->itemName);
         // Log::info($results->toSql());
-        $results = $results->get();
+        $results = $results->get(); //->take(1);
+        //Log::alert( InputVoucherItemVSelectResource::collection($results)->toArray(request()));
+        return $this->ok(InputVoucherItemVSelectResource::collection($results));
+    }
+
+    /**
+     * Display a Items For VSelect that show only available items.
+     */
+    public function getAvailableItemsVSelect(Request $request)
+    {
+        $results = ItemStoreView::whereRaw('countIn-countOut + countReIn-countReOut >0')
+            ->select(
+                'id',
+                'itemId',
+                'itemName',
+                'code',
+                'ItemDescription',
+                'description',
+                'notes',
+                'price',
+                'itemCategoryId',
+                'itemCategoryName',
+                'stockId',
+                'stockName',
+                'countIn',
+                'countOut',
+                'countReIn',
+                'countReOut'
+            );
+
+        if (isset($request->employeeId) && $request->employeeId != "0") {
+            $results = $results->whereRaw('employeeId=' . $request->employeeId);
+        }
+
+        if (!empty($request->itemName)) {
+            $results = $results->where('itemName', 'like', '%' . trim($request->itemName) . '%');
+        }
+         //Log::info($results->toSql());
+        $results = $results->get(); //->take(1);
+          //Log::alert( InputVoucherItemVSelectResource::collection($results)->toArray(request()));
         return $this->ok(InputVoucherItemVSelectResource::collection($results));
     }
     public function getAvailableItemsVSelectByEmployeeId($employeeId)
@@ -187,6 +224,9 @@ class InputVoucherItemController extends Controller
     public function destroy(string $id)
     {
         $data = InputVoucherItem::find($id);
+        if ($data->outputItems != null) {
+            return $this->error('This Item Have Output Vouchers !!!', $data, $status = 403);
+        }
         $data->delete();
         return $this->ok(null);
     }

@@ -110,7 +110,7 @@ class StoreController extends Controller
         if (!$request->isNotFilled('description') && $request->description != '') {
             $filter_billOR[] = ['description', 'like', '%' . $request->description . '%'];
         }
-        $data = $data->where($filter_bill)->paginate($limit);;
+        $data = $data->where($filter_bill)->paginate($limit);
         // if (! $request->isNotFilled('isIn') && $request->isIn != -1) {
         //     $filter_bill[] = ['is_in', $request->isIn];
         // }

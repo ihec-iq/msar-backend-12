@@ -7,7 +7,9 @@ use App\Http\Requests\Item\ItemGetFilterRequest;
 use App\Http\Requests\Item\ItemStoreRequest;
 use App\Http\Resources\Item\ItemResource;
 use App\Http\Resources\Item\ItemResourceCollection;
+use App\Models\InputVoucherItem;
 use App\Models\Item;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -34,13 +36,13 @@ class ItemController extends Controller
         // }
 
         if (! $request->isNotFilled('name') && $request->name != '') {
-            $filter_bill[] = ['name', 'like', '%'.$request->name.'%'];
+            $filter_bill[] = ['name', 'like', '%' . $request->name . '%'];
         }
         if (! $request->isNotFilled('description') && $request->description != '') {
-            $filter_bill[] = ['description', 'like', '%'.$request->description.'%'];
+            $filter_bill[] = ['description', 'like', '%' . $request->description . '%'];
         }
         if (! $request->isNotFilled('code') && $request->code != '') {
-            $filter_bill[] = ['code', 'like', '%'.$request->code.'%'];
+            $filter_bill[] = ['code', 'like', '%' . $request->code . '%'];
         }
         if (! $request->isNotFilled('isIn') && $request->is_in != -1) {
             $filter_bill[] = ['is_in', $request->is_in];
@@ -68,8 +70,8 @@ class ItemController extends Controller
             'description' => $request->description,
             'item_category_id' => $request->category_id,
             'measuring_unit' => $request->measuringUnit,
-            'user_create_id' => auth()->user()->id,
-            'user_update_id' => auth()->user()->id,
+            'user_create_id' => Auth::user()->id,
+            'user_update_id' =>  Auth::user()->id,
         ]);
 
         return $this->ok(new ItemResource($data));
@@ -113,8 +115,9 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
+        if ($item->InputVoucherItems != null || $item->OuputVoucherItems != null)
+            return $this->error('This Item Have InputVoucher!!!');
         $item->delete();
-
         return $this->ok(null);
     }
 }

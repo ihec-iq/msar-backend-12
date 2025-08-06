@@ -56,38 +56,40 @@ class UserController extends Controller
         }
     }
 
-    public function store(UserStoreRequest $request)
+    public function store(Request $request)
     {
         try {
-            // ✅ تحديد الـ user_id (الذي قام بإنشاء المستخدم)
             $creatorId = Auth::id() ?? 1;
-
-            // ✅ تجهيز بيانات المستخدم بشكل نظيف
+            $validate = $request->validate([
+                'name'      => ['required', 'string', 'min:2', 'max:255'],
+                'user_name' => ['required', 'string', 'min:2', 'max:255'],
+                'email'     => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'password'  => ['required', 'string', 'min:8', 'confirmed'],
+                // 'user_type' => ['nullable', 'string'], // إذا كان لديك user_type
+                'any_device' => ['boolean'],
+                'active'    => ['boolean'],
+            ]);
             $userData = [
-                'name'        => $request->name,
-                'user_name'   => $request->user_name,
-                'email'       => $request->email,
-                'password'    => Hash::make($request->password),
-                'user_type'   => $request->user_type ?? null,
-                'any_device'  => $request->boolean('any_device', false),
-                'active'      => $request->boolean('active', false),
-                'window_id'   => $request->window_id ?? 1,
+                'name'        => $validate['name'],
+                'user_name'   => $validate['user_name'],
+                'email'       => $validate['email'],
+                'password'    => Hash::make($validate['password']),
+                // 'user_type'   => $validate['user_type'] ?? null,
+                'any_device'  => boolval($validate['any_device']),
+                'active'      => boolval($validate['active']),
+                'window_id'   => $validate['window_id'] ?? 1,
                 'user_id'     => $creatorId,
             ];
 
-            // ✅ إنشاء المستخدم
             $user = User::create($userData);
 
-            // ✅ إصدار Access Token
             $accessToken = $user->createToken($user->email)->plainTextToken;
 
-            // ✅ تحديث الأدوار إذا تم إرسالها
             if (!empty($request->roles)) {
                 $roles = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
                 $user->syncRoles($roles);
             }
 
-            // ✅ إعادة المستخدم المحدث بعد إضافة الأدوار
             $user->refresh();
 
             return $this->ok([
@@ -95,11 +97,9 @@ class UserController extends Controller
                 'token' => $accessToken,
             ]);
         } catch (\Throwable $e) {
-            // يمكنك تفعيل هذا للسجل فقط:
-            // \Log::error('User Store Error: ' . $e->getMessage());
+            Log::error('User Store Error: ' . $e->getMessage());
 
             return $this->error(__('general.saveUnsuccessfully'));
-            // أو لإظهار رسالة الخطأ للتصحيح:
             // return $this->error($e->getMessage(), __('general.saveUnsuccessfully'));
         }
     }

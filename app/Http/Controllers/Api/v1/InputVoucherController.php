@@ -36,7 +36,7 @@ class InputVoucherController extends Controller
         $data = InputVoucher::orderBy('id', 'desc');
 
         if (! $request->isNotFilled('name') && $request->name != '') {
-            $data = $data->orWhere('number', 'like', '%' . $request->name . '%');
+            $data = $data->orWhere('number',   $request->name);
         }
         if (! $request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('notes', 'like', '%' . $request->name . '%');
@@ -127,6 +127,7 @@ class InputVoucherController extends Controller
 
     public function update(Request $request, InputVoucher $inputVoucher)
     {
+        Log::alert($request);
         $request->validate([
             'number' => 'required|string|unique:input_vouchers,number,' . $inputVoucher->id,
             'date' => 'required|date',

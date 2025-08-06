@@ -67,7 +67,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
     });
     Route::prefix('/inputVoucherItem')->group(function () {
         Route::get('/', [InputVoucherItemController::class, 'index']);
-        Route::get('/getAvailableItemsVSelect/{storeId}', [InputVoucherItemController::class, 'getAvailableItemsVSelect']);
+        Route::get('/getAvailableItemsVSelect', [InputVoucherItemController::class, 'getAvailableItemsVSelect']);
         Route::get('/getAvailableItemsVSelectByEmployeeId/{employeeId}', [InputVoucherItemController::class, 'getAvailableItemsVSelectByEmployeeId']);
          Route::get('/getAllItemsVSelect/{storeId}', [InputVoucherItemController::class, 'getAllItemsVSelect']);
         Route::get('/filter', [InputVoucherItemController::class, 'filter']);
