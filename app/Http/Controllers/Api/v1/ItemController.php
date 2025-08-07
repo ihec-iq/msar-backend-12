@@ -26,8 +26,18 @@ class ItemController extends Controller
         return $this->ok($data);
     }
 
-    public function filter(ItemGetFilterRequest $request)
+    public function filter(Request $request)
     {
+
+        $request->validate([
+            'limit' => ['required', 'integer', 'min:1'],
+            'name' => ['sometimes', 'string', 'max:255', 'nullable'],
+            'description' => ['sometimes', 'string', 'max:1000', 'nullable'],
+            'code' => ['sometimes', 'string', 'max:50', 'nullable'],
+            'itemCategoryId' => ['sometimes', 'integer', 'exists:item_categories,id', 'nullable'],
+            'measuringUnit' => ['sometimes', 'string', 'max:50', 'nullable'],
+        ]);
+
         $filter_bill = [];
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
         // if (Auth::user()->hasAnyPermission(['Administrator', 'Super-Admin'])) {
@@ -62,8 +72,15 @@ class ItemController extends Controller
         }
     }
 
-    public function store(ItemStoreRequest $request)
+    public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'string|max:50|nullable',
+            'description' => 'string|max:1000|nullable',
+            'category_id' => 'integer|exists:item_categories,id',
+            'measuringUnit' => 'string|max:50|nullable',
+        ]);
         $data = Item::create([
             'name' => $request->name,
             'code' => $request->code,
@@ -98,14 +115,14 @@ class ItemController extends Controller
             'code' => 'string|unique:items,code,' . $id . '|nullable',
             'description' => 'string|nullable',
             'category_id' => 'integer|exists:item_categories,id',
-            'measuringUnit' => 'string|nullable',
+            'measuring_unit' => 'string|nullable',
         ]);
         $data = Item::find($id);
         $data->name = $request->name;
         $data->code = $request->code;
         $data->description = $request->description;
         $data->item_category_id = $request->category_id;
-        $data->measuring_unit = $request->measuringUnit;
+        $data->measuring_unit = $request->measuring_unit;
         $data->user_update_id = Auth::user()->id;
 
         $data->save();
@@ -115,7 +132,7 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
-        if ($item->InputVoucherItems != null || $item->OuputVoucherItems != null)
+        if ($item->InputVoucherItems()->exists() || $item->OuputVoucherItems()->exists())
             return $this->error('This Item Have InputVoucher!!!');
         $item->delete();
         return $this->ok(null);

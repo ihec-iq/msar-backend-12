@@ -224,7 +224,7 @@ class InputVoucherItemController extends Controller
     public function destroy(string $id)
     {
         $data = InputVoucherItem::find($id);
-        if ($data->outputItems != null) {
+        if ($data->OutputVoucherItems()->exists()) {
             return $this->error('This Item Have Output Vouchers !!!', $data, $status = 403);
         }
         $data->delete();

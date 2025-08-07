@@ -127,7 +127,6 @@ class InputVoucherController extends Controller
 
     public function update(Request $request, InputVoucher $inputVoucher)
     {
-        Log::alert($request);
         $request->validate([
             'number' => 'required|string|unique:input_vouchers,number,' . $inputVoucher->id,
             'date' => 'required|date',
@@ -137,7 +136,6 @@ class InputVoucherController extends Controller
             'requestedBy' => 'nullable|string',
             'notes' => 'nullable',
         ]);
-        Log::alert($request);
         $inputVoucher->number = $request->number;
         $inputVoucher->date = $request->date;
         $inputVoucher->date_receive = $request->dateReceive;

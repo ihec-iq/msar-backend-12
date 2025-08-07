@@ -102,7 +102,7 @@ class InputVoucherExcelSeeder extends Seeder
             $date = $this->convertDate($firstRow['date']);
 
             $voucher = InputVoucher::create([
-                'number' => $number ,
+                'number' => $number,
                 'date' => $date,
                 'notes' => $firstRow['notes'] ?? null,
                 'stock_id' => $stock->id,
@@ -140,10 +140,10 @@ class InputVoucherExcelSeeder extends Seeder
                 InputVoucherItem::create([
                     'input_voucher_id' => $voucher->id,
                     'item_id' => $item->id,
-                    'count' => $entry['count'] ?? 0,
-                    'price' => $entry['price']*100 ?? 0,
-                    'value' => $entry['total']*100 ?? 0,
-                    'notes' => $entry['notes'] ?? null,
+                    'count' => is_numeric($entry['count'] ?? null) ? $entry['count'] : 1,
+                    'price' => is_numeric($entry['price'] ?? null) ? $entry['price'] * 100 : 0,
+                    'value' => is_numeric($entry['total'] ?? null) ? $entry['total'] * 100 : 0,
+                    'notes' => trim($entry['notes'] ?? null),
                 ]);
 
                 $success++;

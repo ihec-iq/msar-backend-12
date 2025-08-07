@@ -48,7 +48,6 @@ class UserController extends Controller
         }
 
         $data = $data->orderBy('updated_at', 'desc')->paginate($limit);
-        Log::alert($data);
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {

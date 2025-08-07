@@ -28,7 +28,7 @@ class InputVoucherItem extends Model
         return $this->morphMany(VoucherItemHistory::class, 'voucher_item_historiable');
     }
 
-    public function outputItems(): HasMany
+    public function OutputVoucherItems(): HasMany
     {
         return $this->hasMany(OutputVoucherItem::class);
     }

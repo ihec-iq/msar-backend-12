@@ -79,6 +79,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
     Route::prefix('/outputVoucher')->group(function () {
         Route::get('/', [OutputVoucherController::class, 'index']);
         Route::get('/filter', [OutputVoucherController::class, 'filter']);
+        Route::get('/checkBillExists', [OutputVoucherController::class, 'checkBillExists']);
         Route::get('/{outputVoucher}', [OutputVoucherController::class, 'show']);
         Route::post('/store', [OutputVoucherController::class, 'store']);
         Route::post('/update/{outputVoucher}', [OutputVoucherController::class, 'update']);

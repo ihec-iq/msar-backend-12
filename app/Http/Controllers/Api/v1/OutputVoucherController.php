@@ -30,7 +30,7 @@ class OutputVoucherController extends Controller
 
         if (!$request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('number', 'like', '%' . $request->name . '%');
-        } 
+        }
         if (!$request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('notes', 'like', '%' . $request->name . '%');
         }
@@ -43,6 +43,22 @@ class OutputVoucherController extends Controller
             return $this->error(__('general.loadFailed'));
         } else {
             return $this->ok(new OutputVoucherResourceCollection($data));
+        }
+    }
+    public function checkBillExists(Request $request)
+    {
+        $data = OutputVoucher::orderBy('id');
+        if (!$request->isNotFilled('number') && $request->number != '') {
+            $data = $data->Where('number',   $request->number);
+        }
+        if (!$request->isNotFilled('date') && $request->date != '') {
+            $data = $data->where('date', $request->date);
+        }
+        $data = $data->get();
+        if ($data->isEmpty()) {
+            return $this->error(__('general.loadFailed'));
+        } else {
+             return $this->ok(data: OutputVoucherResource::collection($data));
         }
     }
 
@@ -73,7 +89,7 @@ class OutputVoucherController extends Controller
         $data = OutputVoucher::create([
             'number' => $request->number,
             'date' => $request->date,
-            'employee_id' => $request->employeeRequestId, 
+            'employee_id' => $request->employeeRequestId,
             'date_bill' => $request->dateBill,
             'number_bill' => $request->numberBill,
             'notes' => $request->notes,
@@ -144,7 +160,7 @@ class OutputVoucherController extends Controller
         ]);
         $outputVoucher->number = $request->number;
         $outputVoucher->date = $request->date;
-        $outputVoucher->employee_id = $request->employeeRequestId; 
+        $outputVoucher->employee_id = $request->employeeRequestId;
         $outputVoucher->notes = $request->notes;
 
         $outputVoucher->date_bill = $request->dateBill;
@@ -166,7 +182,7 @@ class OutputVoucherController extends Controller
         foreach ($arrayItems as $key => $item) {
             // item schema {"id":0,"input_voucher_id":0,"item":{"name":"","id":0,"code":"","description":"","itemCategory":{"id":0,"name":""},"measuringUnit":""},"description":"66666666","count":0,"price":0,"value":0,"notes":""}
             if ($item['id'] > 0) {
-                // update already item immediately 
+                // update already item immediately
                 $newItem = OutputVoucherItem::find($item['id']);
                 $newItem->item_id = $item['Item']['id'];
                 $newItem->count = $item['count'];
@@ -186,7 +202,7 @@ class OutputVoucherController extends Controller
                 $newItem->employee_id = $request->employeeRequestId;
                 $newItem->price = $item['price'] * 100;
                 $newItem->value = $newItem->count * $newItem->price * 100;
-                $newItem->output_voucher_id = $outputVoucher->id; 
+                $newItem->output_voucher_id = $outputVoucher->id;
 
                 array_push($arrayNewItemInsert, $newItem);
             }

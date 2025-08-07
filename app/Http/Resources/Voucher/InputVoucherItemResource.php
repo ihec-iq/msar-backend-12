@@ -28,8 +28,8 @@ class InputVoucherItemResource extends JsonResource
             'value' => ($this->price * $this->count) / 100,
             'notes' => $this->notes,
             //
-            //'outputItems' => $this->outputItems,
-            //'countOutputItems' => $this->outputItems->sum('count'),
+            //'outputItems' => $this->OutputVoucherItems,
+            //'countOutputItems' => $this->OutputVoucherItems->sum('count'),
         ];
     }
 }
