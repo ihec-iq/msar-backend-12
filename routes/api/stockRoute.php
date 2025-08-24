@@ -22,6 +22,8 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
         Route::get('/', [StoreController::class, 'index']);
         Route::get('/filter', [StoreController::class, 'filter']);
         Route::get('/summation', [StoreController::class, 'summation']);
+        Route::get('/barrenSection', action: [StoreController::class, 'barrenSection']);
+        Route::get('/barrenSection/{id}', action: [StoreController::class, 'barrenSectionId']);
         Route::get('/item/history/{id}', [StoreController::class, 'showItemHistory']);
 
     });

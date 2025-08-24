@@ -41,8 +41,8 @@ class VoucherItemHistoryController extends Controller
 
         $data = VoucherItemHistory::orderBy('id', 'desc')->where($filter_bill)->paginate($limit);
         //$data = VoucherItemHistory::orderBy('id', 'desc')->paginate($limit);
+        //Log::alert($data->toArray());
 
-        //return VoucherItemHistoryResource::collection($data);
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {

@@ -60,15 +60,15 @@ class InputVoucherController extends Controller
             'number' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) use ($request) {
-                    $year = date('Y', strtotime($request->date));
-                    $exists = \App\Models\InputVoucher::where('number', $value)
-                        ->whereYear('date', $year)
-                        ->exists();
-                    if ($exists) {
-                        $fail(__('validation.unique', ['attribute' => $attribute]));
-                    }
-                },
+                // function ($attribute, $value, $fail) use ($request) {
+                //     $year = date('Y', strtotime($request->date));
+                //     $exists = \App\Models\InputVoucher::where('number', $value)
+                //         ->whereYear('date', $year)
+                //         ->exists();
+                //     if ($exists) {
+                //         $fail(__('validation.unique', ['attribute' => $attribute]));
+                //     }
+                // },
             ],
             'date' => 'required|date',
             'dateReceive' => 'nullable|date',
@@ -128,7 +128,7 @@ class InputVoucherController extends Controller
     public function update(Request $request, InputVoucher $inputVoucher)
     {
         $request->validate([
-            'number' => 'required|string|unique:input_vouchers,number,' . $inputVoucher->id,
+            // 'number' => 'required|string|unique:input_vouchers,number,' . $inputVoucher->id,
             'date' => 'required|date',
             'dateReceive' => 'nullable|date',
             'dateBill' => 'nullable|date',

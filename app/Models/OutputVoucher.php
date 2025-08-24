@@ -21,9 +21,13 @@ class OutputVoucher extends Model
     public function Items(): HasMany
     {
         return $this->hasMany(OutputVoucherItem::class)->orderBy('id', 'desc');
-    } 
+    }
     public function Employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+    public function UserCreated(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_create_id');
     }
 }

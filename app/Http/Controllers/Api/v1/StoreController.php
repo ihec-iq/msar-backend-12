@@ -9,6 +9,7 @@ use App\Http\Resources\Store\StoreSummationResourceCollection;
 use App\Models\InputVoucherItem;
 use App\Models\ItemStoreView;
 use App\Models\OutputVoucherItem;
+use App\Models\OutputVoucherItemView;
 use App\Models\RetrievalVoucherItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -144,6 +145,50 @@ class StoreController extends Controller
         } else {
             //return $this->ok($data);
             return $this->ok(new StoreSummationResourceCollection($data));
+        }
+    }
+    public function barrenSection(Request $request)
+    {
+        $filter_bill = [];
+        $filter_billOR = [];
+        $request->filled('limit') ? $limit = $request->limit : $limit = 10;
+        $data = OutputVoucherItemView::select('sectionId', 'sectionName', DB::raw('SUM(count) as count'))
+            ->groupBy('sectionId', 'sectionName')
+            ->orderBy('sectionName');
+
+
+        if (!$request->isNotFilled('item') && $request->item != '') {
+            $filter_bill[] = ['sectionName', 'like', '%' . $request->item . '%'];
+        }
+        $data = $data->where($filter_bill)->paginate($limit);
+
+        if (empty($data) || $data == null) {
+            return $this->error(__('general.loadFailed'));
+        } else {
+            //return $this->ok($data);
+            return $this->ok(($data));
+        }
+    }
+    public function barrenSectionId($id, Request $request)
+    {
+        $filter_bill = [];
+        $filter_billOR = [];
+        $request->filled('limit') ? $limit = $request->limit : $limit = 10;
+        $data = OutputVoucherItemView::select('itemId', 'itemName',  'count', 'numberOutput', 'dateOutput' , 'price' , 'employeeName' , 'employeeId')
+            ->orderBy('employeeName');
+        $data = $data->where('sectionId', $id);
+
+
+        if (!$request->isNotFilled('item') && $request->item != '') {
+            $filter_bill[] = ['itemName', 'like', '%' . $request->item . '%'];
+        }
+        $data = $data->where($filter_bill)->paginate($limit);
+
+        if (empty($data) || $data == null) {
+            return $this->error(__('general.loadFailed'));
+        } else {
+            //return $this->ok($data);
+            return $this->ok(($data));
         }
     }
 

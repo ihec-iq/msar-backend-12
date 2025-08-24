@@ -19,7 +19,7 @@ class OutputVoucherController extends Controller
      */
     public function index()
     {
-        return $this->ok(OutputVoucherResource::collection(OutputVoucher::all()));
+        return $this->ok(OutputVoucherResource::collection(OutputVoucher::get()));
     }
 
     public function filter(Request $request)
@@ -71,15 +71,15 @@ class OutputVoucherController extends Controller
             'number' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) use ($request) {
-                    $year = date('Y', strtotime($request->date));
-                    $exists = \App\Models\OutputVoucher::where('number', $value)
-                        ->whereYear('date', $year)
-                        ->exists();
-                    if ($exists) {
-                        $fail(__('validation.unique', ['attribute' => $attribute]));
-                    }
-                },
+                // function ($attribute, $value, $fail) use ($request) {
+                //     $year = date('Y', strtotime($request->date));
+                //     $exists = \App\Models\OutputVoucher::where('number', $value)
+                //         ->whereYear('date', $year)
+                //         ->exists();
+                //     if ($exists) {
+                //         $fail(__('validation.unique', ['attribute' => $attribute]));
+                //     }
+                // },
             ],
             'date' => 'required|date',
             'notes' => 'nullable|string',
@@ -141,16 +141,16 @@ class OutputVoucherController extends Controller
             'number' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) use ($request, $outputVoucher) {
-                    $year = date('Y', strtotime($request->date));
-                    $exists = \App\Models\OutputVoucher::where('number', $value)
-                        ->whereYear('date', $year)
-                        ->where('id', '!=', $outputVoucher->id)
-                        ->exists();
-                    if ($exists) {
-                        $fail(__('validation.unique', ['attribute' => $attribute]));
-                    }
-                },
+                // function ($attribute, $value, $fail) use ($request, $outputVoucher) {
+                //     $year = date('Y', strtotime($request->date));
+                //     $exists = \App\Models\OutputVoucher::where('number', $value)
+                //         ->whereYear('date', $year)
+                //         ->where('id', '!=', $outputVoucher->id)
+                //         ->exists();
+                //     if ($exists) {
+                //         $fail(__('validation.unique', ['attribute' => $attribute]));
+                //     }
+                // },
             ],
             'date' => 'required|date',
             'employeeRequestId' => 'required|integer|exists:employees,id',
