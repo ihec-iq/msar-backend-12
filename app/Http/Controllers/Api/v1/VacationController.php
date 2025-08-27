@@ -87,7 +87,7 @@ class VacationController extends Controller
     public function makeVacation()
     {
 
-        $employees = Employee::all();
+        $employees = Employee::get();
 
         $data = [];
         foreach ($employees as $employee) {

@@ -18,7 +18,7 @@ class RetrievalVoucherController extends Controller
      */
     public function index()
     {
-        return $this->ok(RetrievalVoucherResource::collection(RetrievalVoucher::all()));
+        return $this->ok(RetrievalVoucherResource::collection(RetrievalVoucher::get()));
     }
 
     public function filter(Request $request)
@@ -30,7 +30,7 @@ class RetrievalVoucherController extends Controller
 
         if (!$request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('number', 'like', '%' . $request->name . '%');
-        } 
+        }
         if (!$request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('notes', 'like', '%' . $request->name . '%');
 
@@ -56,7 +56,7 @@ class RetrievalVoucherController extends Controller
         $data = RetrievalVoucher::create([
             'number' => $request->number,
             'date' => $request->date,
-            'employee_id' => $employee['id'], 
+            'employee_id' => $employee['id'],
             'notes' => $request->notes,
             'retrieval_voucher_item_type_id' => $request->TypeId,
             'user_create_id' => auth()->user()->id,
@@ -100,7 +100,7 @@ class RetrievalVoucherController extends Controller
 
         $retrievalVoucher->number = $request->number;
         $retrievalVoucher->date = $request->date;
-        $retrievalVoucher->employee_id = $employee['id']; 
+        $retrievalVoucher->employee_id = $employee['id'];
         $retrievalVoucher->retrieval_voucher_item_type_id = $request->TypeId;
         $retrievalVoucher->notes = $request->notes;
         $retrievalVoucher->user_update_id = auth()->user()->id;

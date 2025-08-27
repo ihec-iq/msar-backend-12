@@ -21,7 +21,7 @@ class ItemController extends Controller
      */
     public function index()
     {
-        $data = ItemResource::collection(Item::all());
+        $data = ItemResource::collection(Item::get());
 
         return $this->ok($data);
     }

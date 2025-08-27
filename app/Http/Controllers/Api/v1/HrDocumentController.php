@@ -22,7 +22,7 @@ class HrDocumentController extends Controller
      */
     public function index()
     {
-        return $this->ok(HrDocumentResource::collection(HrDocument::all()));
+        return $this->ok(HrDocumentResource::collection(HrDocument::get()));
     }
 
     public function filter(Request $request)
@@ -148,10 +148,7 @@ class HrDocumentController extends Controller
                 'nextDateBonus' => Carbon::parse($date_last_bonus)->addYear(1)->addDay($increseDay * -1)->addMonths($increseMonths * -1)->format('Y-m-d'),
                 'Documents' => HrDocumentResource::collection($filteredArray)
             ];
-            //Log::alert($result);
-            return $result;
-
-            //date_next_bonus
+             return $result;
         }
     }
     public function get_check_bonus_employee($employeeId)
@@ -238,7 +235,7 @@ class HrDocumentController extends Controller
                 $data = $this->addHrDocument(request: $request, employeeId: $employee->id);
             }
         } elseif ($request->chosePushBy == EnumTypeChoseShareDocument::ToAllEmployees->value) {
-            $EmployeesBySection = Employee::all();
+            $EmployeesBySection = Employee::get();
             foreach ($EmployeesBySection as $key => $employee) {
                 $data = $this->addHrDocument(request: $request, employeeId: $employee->id);
             }

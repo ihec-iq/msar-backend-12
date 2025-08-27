@@ -16,7 +16,7 @@ class VoucherItemHistoryController extends Controller
      */
     public function index()
     {
-        return $this->ok(VoucherItemHistoryResource::collection(VoucherItemHistory::all()));
+        return $this->ok(VoucherItemHistoryResource::collection(VoucherItemHistory::get()));
     }
 
     public function filter(Request $request)
@@ -41,7 +41,35 @@ class VoucherItemHistoryController extends Controller
 
         $data = VoucherItemHistory::orderBy('id', 'desc')->where($filter_bill)->paginate($limit);
         //$data = VoucherItemHistory::orderBy('id', 'desc')->paginate($limit);
-        //Log::alert($data->toArray());
+
+        if (empty($data) || $data == null) {
+            return $this->error(__('general.loadFailed'));
+        } else {
+            return $this->ok(new VoucherItemHistoryResourceCollection($data));
+        }
+    }
+    public function reportStorage(Request $request)
+    {
+        $filter_bill = [];
+        $request->filled('limit') ? $limit = $request->limit : $limit = 10;
+        // if (! $request->isNotFilled('name') && $request->name != '') {
+        //     $filter_bill[] = ['name', 'like', '%'.$request->name.'%'];
+        // }
+        if (
+            !$request->isNotFilled('inputVoucherItemId') &&
+            $request->inputVoucherItemId != ''
+            && $request->inputVoucherItemId != '0'
+        ) {
+            $filter_bill[] = ['input_voucher_item_id', $request->inputVoucherItemId];
+        }
+        if (!$request->isNotFilled('employeeId') && $request->employeeId != '' && $request->employeeId != '0') {
+            $filter_bill[] = ['employee_id', $request->employeeId];
+        }
+        $filter_bill[] = ['voucher_item_historiable_type', '!=', 'App\\Models\\InputVoucherItem'];
+        //return ($filter_bill);
+
+        $data = VoucherItemHistory::orderBy('id', 'desc')->where($filter_bill)->paginate($limit);
+        //$data = VoucherItemHistory::orderBy('id', 'desc')->paginate($limit);
 
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));

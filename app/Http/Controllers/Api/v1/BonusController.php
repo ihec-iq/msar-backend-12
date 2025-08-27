@@ -87,7 +87,7 @@ class BonusController extends Controller
      */
     public function store(BonusStoreRequest $request)
     {
-        //return $request->all();
+        //return $request->get();
         try {
             $bonus = Bonus::create($request->validated());
             // must to check employee have level up degree_stage_id

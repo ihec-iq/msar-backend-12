@@ -32,8 +32,9 @@ class OutputVoucherController extends Controller
             $data = $data->orWhere('number', 'like', '%' . $request->name . '%');
         }
         if (!$request->isNotFilled('name') && $request->name != '') {
-            $data = $data->orWhere('notes', 'like', '%' . $request->name . '%');
+            $data = $data->orWhereRelation('Employee', 'name', 'like', '%' . $request->name . '%');
         }
+
         if (!$request->isNotFilled('issueDateFrom') && $request->issueDateFrom != '') {
             $data = $data->where('date', '>=', $request->issueDateFrom, 'and', 'date', '<=', $request->issueDateTo);
         }
@@ -58,7 +59,7 @@ class OutputVoucherController extends Controller
         if ($data->isEmpty()) {
             return $this->error(__('general.loadFailed'));
         } else {
-             return $this->ok(data: OutputVoucherResource::collection($data));
+            return $this->ok(data: OutputVoucherResource::collection($data));
         }
     }
 

@@ -41,6 +41,7 @@ class InputVoucherController extends Controller
         if (! $request->isNotFilled('name') && $request->name != '') {
             $data = $data->orWhere('notes', 'like', '%' . $request->name . '%');
         }
+
         if (! $request->isNotFilled('issueDateFrom') && $request->issueDateFrom != '') {
             $data = $data->where('date', '>=', $request->issueDateFrom, 'and', 'date', '<=', $request->issueDateTo);
         }

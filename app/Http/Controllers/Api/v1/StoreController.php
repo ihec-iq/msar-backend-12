@@ -174,7 +174,7 @@ class StoreController extends Controller
         $filter_bill = [];
         $filter_billOR = [];
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
-        $data = OutputVoucherItemView::select('itemId', 'itemName',  'count', 'numberOutput', 'dateOutput' , 'price' , 'employeeName' , 'employeeId')
+        $data = OutputVoucherItemView::select('OutputId','itemId', 'itemName',  'count', 'numberOutput', 'dateOutput' , 'price' , 'employeeName' , 'employeeId')
             ->orderBy('employeeName');
         $data = $data->where('sectionId', $id);
 

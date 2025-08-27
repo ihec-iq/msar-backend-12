@@ -26,7 +26,7 @@ class UserController extends Controller
     }
     public function getLite()
     {
-        $data = UserLiteResource::collection(User::all());
+        $data = UserLiteResource::collection(User::get());
 
         return $this->ok($data);
     }

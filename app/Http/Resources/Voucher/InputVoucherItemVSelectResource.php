@@ -41,7 +41,8 @@ class InputVoucherItemVSelectResource extends JsonResource
             'price' => $this->price / 100,
             'value' => ($this->price * ($this->countIn - $this->countOut + $this->countReIn - $this->countReOut)) / 100,
             'notes' => $this->notes,
-            'fingerprint' => $this->generateFingerprint(),
+            // 'fingerprint' => $this->generateFingerprint(),
+            'fingerprint' => rand(13213213, 9999999999),
         ];
     }
 }

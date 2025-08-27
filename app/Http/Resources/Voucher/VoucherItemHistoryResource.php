@@ -20,7 +20,7 @@ class VoucherItemHistoryResource extends JsonResource
     {
         $item = null;
         $type = "";
-        Log::alert($this->voucher_item_historiable->toArray());
+        //Log::alert(message: $this->voucher_item_historiable->toArray());
         if ($this->voucher_item_historiable_type == 'App\\Models\\InputVoucherItem') {
             //$item = new InputVoucherItemResource($this->voucher_item_historiable);
             $type = 'سند ادخال';

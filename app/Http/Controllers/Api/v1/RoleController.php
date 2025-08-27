@@ -21,7 +21,7 @@ class RoleController extends Controller
      */
     public function index()
     {
-        $data = Role::all();
+        $data = Role::get();
 
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));

@@ -137,6 +137,7 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/stockSys'
     Route::prefix('/voucherItemHistory')->group(function () {
         Route::get('', [VoucherItemHistoryController::class, 'index']);
         Route::get('/filter', [VoucherItemHistoryController::class, 'filter']);
+        Route::get('/reportStorage', [VoucherItemHistoryController::class, 'reportStorage']);
         Route::get('/{outputVoucherItem}', [VoucherItemHistoryController::class, 'show']);
     });
 

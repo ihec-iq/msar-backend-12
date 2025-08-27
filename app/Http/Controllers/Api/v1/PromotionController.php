@@ -21,7 +21,7 @@ class PromotionController extends Controller
      */
     public function index()
     {
-        $data = Promotion::all();
+        $data = Promotion::get();
         return $this->ok(PromotionResource::collection($data));
     }
 
