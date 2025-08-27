@@ -50,7 +50,12 @@ class InputVoucherItemObserver
      */
     public function deleted(InputVoucherItem $inputVoucherItem): void
     {
-        //
+        VoucherItemHistory::where([
+            'input_voucher_item_id' => $inputVoucherItem->id,
+            'item_id' => $inputVoucherItem->item_id,
+            'voucher_item_historiable_id' => $inputVoucherItem->id,
+            'voucher_item_historiable_type' => InputVoucherItem::class,
+        ])->delete();
     }
 
     /**
@@ -58,7 +63,16 @@ class InputVoucherItemObserver
      */
     public function restored(InputVoucherItem $inputVoucherItem): void
     {
-        //
+        VoucherItemHistory::create([
+            'input_voucher_item_id' => $inputVoucherItem->id,
+            'item_id' => $inputVoucherItem->item_id,
+            'voucher_item_historiable_id' => $inputVoucherItem->id,
+            'voucher_item_historiable_type' => InputVoucherItem::class,
+            'employee_id' => $inputVoucherItem->employee_id,
+            'price' => $inputVoucherItem->price,
+            'count' => $inputVoucherItem->count  ,
+            'notes' => $inputVoucherItem->notes,
+        ]);
     }
 
     /**
