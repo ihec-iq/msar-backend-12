@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Voucher\InputVoucherItemVSelectResource;
 use App\Http\Resources\Voucher\VoucherItemHistoryResource;
 use App\Http\Resources\Voucher\VoucherItemHistoryResourceCollection;
 use App\Models\VoucherItemHistory;
@@ -83,19 +84,19 @@ class VoucherItemHistoryController extends Controller
             items.name as itemName,
             items.code as code,
             items.description as ItemDescription,
-            items.note as notes,
-            item_categories.id as categoryId,
-            item_categories.name as categoryName,
+            item_categories.id as itemCategoryId,
+            item_categories.name as itemCategoryName,
             voucher_item_histories.price as price,
             SUM(IF(voucher_item_histories.count > 0, voucher_item_histories.count, 0)) as `countIn`,
             SUM(IF(voucher_item_histories.count < 0, ABS(voucher_item_histories.count), 0)) as `countOut`,
             SUM(voucher_item_histories.count) as total
         ')
             ->groupBy('voucher_item_histories.item_id', 'items.name', 'voucher_item_histories.price',
-             'item_categories.name','items.code','items.description','items.note')
+            'item_categories.id',
+            'item_categories.name','items.code','items.description')
             ->get();
         // $data = VoucherItemHistory::orderBy('id', 'desc')->where($filter_bill)->paginate($limit);
-        return $data;
+        return $this->ok(InputVoucherItemVSelectResource::collection($data));
     }
 
 

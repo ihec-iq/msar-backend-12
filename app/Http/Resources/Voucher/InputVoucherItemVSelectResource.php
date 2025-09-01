@@ -4,6 +4,7 @@ namespace App\Http\Resources\Voucher;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Nette\Utils\Random;
 
 class InputVoucherItemVSelectResource extends JsonResource
 {
@@ -41,7 +42,7 @@ class InputVoucherItemVSelectResource extends JsonResource
             'price' => $this->price / 100,
             'value' => ($this->price * ($this->countIn - $this->countOut + $this->countReIn - $this->countReOut)) / 100,
             'notes' => $this->notes,
-            'fingerprint' => $this->generateFingerprint(),
+            'fingerprint' => method_exists($this, 'generateFingerprint') ? $this->generateFingerprint() : Random::generate(10),
         ];
     }
 }

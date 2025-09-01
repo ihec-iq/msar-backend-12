@@ -21,8 +21,5 @@ class Item extends Model
     {
         return $this->hasMany(InputVoucherItem::class);
     }
-    public function OutputVoucherItems(): HasMany
-    {
-        return $this->hasMany(OutputVoucherItem::class);
-    }
+
 }
