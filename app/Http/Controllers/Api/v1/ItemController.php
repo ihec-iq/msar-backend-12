@@ -132,7 +132,6 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
-        Log::alert(message: $item->InputVoucherItems()->get()->toArray());
         if ($item->InputVoucherItems()->exists())
             return $this->error('This Item Have InputVoucher!!!');
         $item->delete();

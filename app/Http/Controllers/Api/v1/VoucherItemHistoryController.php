@@ -70,8 +70,8 @@ class VoucherItemHistoryController extends Controller
         $query = VoucherItemHistory::where($filter_bill)
             ->join('items', 'voucher_item_histories.item_id', '=', 'items.id')
             ->join('item_categories', 'items.item_category_id', '=', 'item_categories.id');
-            // ->join('input_voucher_items', 'input_voucher_items.id', '=', 'voucher_item_histories.input_voucher_item_id')
-            // ->join('stocks', 'stocks.id', '=', 'input_voucher_items.stock_id')
+        // ->join('input_voucher_items', 'input_voucher_items.id', '=', 'voucher_item_histories.input_voucher_item_id')
+        // ->join('stocks', 'stocks.id', '=', 'input_voucher_items.stock_id')
 
 
         if (!$request->isNotFilled('name') && $request->name != '') {
@@ -91,9 +91,15 @@ class VoucherItemHistoryController extends Controller
             SUM(IF(voucher_item_histories.count < 0, ABS(voucher_item_histories.count), 0)) as `countOut`,
             SUM(voucher_item_histories.count) as total
         ')
-            ->groupBy('voucher_item_histories.item_id', 'items.name', 'voucher_item_histories.price',
-            'item_categories.id',
-            'item_categories.name','items.code','items.description')
+            ->groupBy(
+                'voucher_item_histories.item_id',
+                'items.name',
+                'voucher_item_histories.price',
+                'item_categories.id',
+                'item_categories.name',
+                'items.code',
+                'items.description'
+            )
             ->get();
         // $data = VoucherItemHistory::orderBy('id', 'desc')->where($filter_bill)->paginate($limit);
         return $this->ok(InputVoucherItemVSelectResource::collection($data));

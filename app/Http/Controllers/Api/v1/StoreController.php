@@ -194,7 +194,6 @@ class StoreController extends Controller
 
     public function showItemHistory(Request $request, string $id)
     {
-        Log::info($request);
         $filter_bill = [];
         $filter_billOR = [];
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
