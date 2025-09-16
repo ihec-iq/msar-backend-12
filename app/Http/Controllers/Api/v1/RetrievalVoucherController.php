@@ -74,7 +74,7 @@ class RetrievalVoucherController extends Controller
             $newItem->count = $item['count'];
             $newItem->notes = $item['notes'];
             $newItem->price = $item['price'] * 100;
-            $newItem->value = $newItem->count * $newItem->price * 100;
+            $newItem->value = $newItem->count * $newItem->price ;
             $newItem->retrieval_voucher_item_type_id = $request->TypeId;
             array_push($arrayItemInsert, $newItem);
         }
@@ -117,7 +117,7 @@ class RetrievalVoucherController extends Controller
                 $newItem->count = $item['count'];
                 $newItem->notes = $item['notes'];
                 $newItem->price = $item['price'] * 100;
-                $newItem->value = $newItem->count * $newItem->price * 100;
+                $newItem->value = $newItem->count * $newItem->price ;
                 $newItem->retrieval_voucher_item_type_id = $request->TypeId;
                 $newItem->save();
             } else {
@@ -129,7 +129,7 @@ class RetrievalVoucherController extends Controller
                 $newItem->count = $item['count'];
                 $newItem->notes = $item['notes'];
                 $newItem->price = $item['price'] * 100;
-                $newItem->value = $newItem->count * $newItem->price * 100;
+                $newItem->value = $newItem->count * $newItem->price;
                 $newItem->retrieval_voucher_item_type_id = $request->TypeId;
                 array_push($arrayItemInsert, $newItem);
             }

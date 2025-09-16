@@ -112,7 +112,7 @@ class InputVoucherController extends Controller
             $newItem->count = $item['count'];
             $newItem->notes = $item['notes'];
             $newItem->price = $item['price'] * 100;
-            $newItem->value = $newItem->count * $newItem->price * 100;
+            $newItem->value = $newItem->count * $newItem->price;
             array_push($arrayItemInsert, $newItem);
         }
         $data->Items()->saveMany($arrayItemInsert);
@@ -171,7 +171,7 @@ class InputVoucherController extends Controller
                 $newItem->notes = $item['notes'];
                 $newItem->count = $item['count'];
                 $newItem->price = $item['price'] * 100;
-                $newItem->value = $newItem->count * $newItem->price * 100;
+                $newItem->value = $newItem->count * $newItem->price;
                 $newItem->save();
             } else {
                 // for collect new items

@@ -17,7 +17,13 @@ class InputVoucherItemVSelectResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'inputVoucherId' => 0,
+            'inputVoucherItemId' => $this->inputVoucherItemId,
+            'InputVoucherItem' => [
+                'id' => $this->inputVoucherItemId,
+                'price' => $this->price,
+                'count' => $this->count,
+                'description' => $this->description,
+            ],
             'Item' => [
                 'id' => $this->itemId,
                 'name' => $this->itemName,

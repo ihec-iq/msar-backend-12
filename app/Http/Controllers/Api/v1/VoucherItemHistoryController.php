@@ -81,6 +81,7 @@ class VoucherItemHistoryController extends Controller
 
         $data = $query->selectRaw('
             voucher_item_histories.item_id as itemId,
+            voucher_item_histories.input_voucher_item_id as inputVoucherItemId,
             items.name as itemName,
             items.code as code,
             items.description as ItemDescription,
@@ -89,10 +90,12 @@ class VoucherItemHistoryController extends Controller
             voucher_item_histories.price as price,
             SUM(IF(voucher_item_histories.count > 0, voucher_item_histories.count, 0)) as `countIn`,
             SUM(IF(voucher_item_histories.count < 0, ABS(voucher_item_histories.count), 0)) as `countOut`,
+            SUM(voucher_item_histories.count) as count,
             SUM(voucher_item_histories.count) as total
         ')
             ->groupBy(
                 'voucher_item_histories.item_id',
+                'voucher_item_histories.input_voucher_item_id',
                 'items.name',
                 'voucher_item_histories.price',
                 'item_categories.id',

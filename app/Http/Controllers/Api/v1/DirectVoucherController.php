@@ -66,7 +66,7 @@ class DirectVoucherController extends Controller
             $newItem->notes = $item['notes'];
             $newItem->employee_id = $request->employeeRequestId;
             $newItem->price = $item['price'] * 100;
-            $newItem->value = $newItem->count * $newItem->price * 100;
+            $newItem->value = $newItem->count * $newItem->price ;
             array_push($arrayItemInsert, $newItem);
         }
         $data->Items()->saveMany($arrayItemInsert);
@@ -104,7 +104,7 @@ class DirectVoucherController extends Controller
                 $newItem->notes = $item['notes'];
                 $newItem->employee_id = $request->employeeRequestId;
                 $newItem->price = $item['price'] * 100;
-                $newItem->value = $newItem->count * $newItem->price * 100;
+                $newItem->value = $newItem->count * $newItem->price ;
                 $newItem->save();
             } else {
                 // for collect new items
@@ -114,7 +114,7 @@ class DirectVoucherController extends Controller
                 $newItem->notes = $item['notes'];
                 $newItem->employee_id = $request->employeeRequestId;
                 $newItem->price = $item['price'] * 100;
-                $newItem->value = $newItem->count * $newItem->price * 100;
+                $newItem->value = $newItem->count * $newItem->price ;
                 array_push($arrayNewItemInsert, $newItem);
             }
         }

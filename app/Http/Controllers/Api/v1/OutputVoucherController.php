@@ -108,7 +108,7 @@ class OutputVoucherController extends Controller
         }
         $arrayItems = json_decode($request->Items, true);
         $arrayItemInsert = [];
-        foreach ($arrayItems as $key => $item) {
+        foreach ($arrayItems as $key => $item) {Log::alert($item);
             $newItem = new OutputVoucherItem();
             $newItem->item_id = $item['Item']['id'];
             $newItem->input_voucher_item_id = $item['inputVoucherItemId'];
@@ -116,7 +116,7 @@ class OutputVoucherController extends Controller
             $newItem->notes = $item['notes'];
             $newItem->employee_id = $request->employeeRequestId;
             $newItem->price = $item['price'] * 100;
-            $newItem->value = $newItem->count * $newItem->price * 100;
+            $newItem->value = $newItem->count * $newItem->price ;
             array_push($arrayItemInsert, $newItem);
         }
 
@@ -190,10 +190,10 @@ class OutputVoucherController extends Controller
                 $newItem->notes = $item['notes'];
                 $newItem->employee_id = $request->employeeRequestId;
                 $newItem->price = $item['price'] * 100;
-                $newItem->value = $newItem->count * $newItem->price * 100;
+                $newItem->value = $newItem->count * $newItem->price;
                 $newItem->input_voucher_item_id = $item['inputVoucherItemId'];
                 $newItem->save();
-            } else {
+            } else {Log::alert( $item);
                 // for collect new items
                 $newItem = new OutputVoucherItem();
                 $newItem->item_id = $item['Item']['id'];

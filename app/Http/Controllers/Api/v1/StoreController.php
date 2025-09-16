@@ -182,7 +182,10 @@ class StoreController extends Controller
         if (!$request->isNotFilled('item') && $request->item != '') {
             $filter_bill[] = ['itemName', 'like', '%' . $request->item . '%'];
         }
-        $data = $data->where($filter_bill)->paginate($limit);
+        if (!$request->isNotFilled('item') && $request->item != '') {
+            $filter_billOR[] = ['employeeName', 'like', '%' . $request->item . '%'];
+        }
+        $data = $data->where($filter_bill)->orWhere($filter_billOR)->paginate($limit);
 
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
