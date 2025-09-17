@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PaginatedResourceCollection;
 use App\Http\Resources\Store\StoreItemHistoryResourceCollection;
 use App\Http\Resources\Store\StoreResourceCollection;
 use App\Http\Resources\Store\StoreSummationResourceCollection;
+use App\Http\Resources\Voucher\BarrenReportResource;
 use App\Models\InputVoucherItem;
 use App\Models\ItemStoreView;
 use App\Models\OutputVoucherItem;
@@ -186,12 +188,12 @@ class StoreController extends Controller
             $filter_billOR[] = ['employeeName', 'like', '%' . $request->item . '%'];
         }
         $data = $data->where($filter_bill)->orWhere($filter_billOR)->paginate($limit);
-
+ 
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {
             //return $this->ok($data);
-            return $this->ok(($data));
+            return $this->ok(new PaginatedResourceCollection($data, BarrenReportResource::class));
         }
     }
 

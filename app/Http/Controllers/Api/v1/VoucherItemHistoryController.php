@@ -69,7 +69,8 @@ class VoucherItemHistoryController extends Controller
 
         $query = VoucherItemHistory::where($filter_bill)
             ->join('items', 'voucher_item_histories.item_id', '=', 'items.id')
-            ->join('item_categories', 'items.item_category_id', '=', 'item_categories.id');
+            ->join('item_categories', 'items.item_category_id', '=', 'item_categories.id')
+            ->join('input_voucher_items', 'voucher_item_histories.input_voucher_item_id', '=', 'input_voucher_items.id');
         // ->join('input_voucher_items', 'input_voucher_items.id', '=', 'voucher_item_histories.input_voucher_item_id')
         // ->join('stocks', 'stocks.id', '=', 'input_voucher_items.stock_id')
 
@@ -82,6 +83,7 @@ class VoucherItemHistoryController extends Controller
         $data = $query->selectRaw('
             voucher_item_histories.item_id as itemId,
             voucher_item_histories.input_voucher_item_id as inputVoucherItemId,
+            input_voucher_items.input_voucher_id as inputVoucherId,
             items.name as itemName,
             items.code as code,
             items.description as ItemDescription,
@@ -96,6 +98,7 @@ class VoucherItemHistoryController extends Controller
             ->groupBy(
                 'voucher_item_histories.item_id',
                 'voucher_item_histories.input_voucher_item_id',
+                'input_voucher_items.input_voucher_id',
                 'items.name',
                 'voucher_item_histories.price',
                 'item_categories.id',

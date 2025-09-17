@@ -16,10 +16,11 @@ class InputVoucherItemVSelectResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->id, 
             'inputVoucherItemId' => $this->inputVoucherItemId,
             'InputVoucherItem' => [
                 'id' => $this->inputVoucherItemId,
+                'inputVoucherId' => $this->inputVoucherId,
                 'price' => $this->price,
                 'count' => $this->count,
                 'description' => $this->description,
