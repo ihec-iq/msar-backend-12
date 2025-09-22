@@ -170,7 +170,7 @@ class EmployeeController extends Controller
     public function store(UpdateEmployeeRequest $request)
     {
         $user = User::firstOrCreate([
-            'name' => $request->name,
+            'name' => $request->validated()['name'],
             'password' => Hash::make('password'),
             'email' => rand(100000, 99999999999) . '@company.com',
             'active' => 1,
@@ -197,48 +197,7 @@ class EmployeeController extends Controller
 
         return $this->ok(new EmployeeResource($employee));
     }
-    public function storeOld(StoreEmployeeRequest $request)
-    {
-        //
-        $user = User::create([
-            'name' => $request->name,
-            'password' => Hash::make('password'),
-            'email' => rand(100000, 99999999999) . '@company.com',
-            'active' => 1,
-        ]);
-
-        $employee = new Employee();
-        $employee->user_id = $user->id;
-
-        $employee->name = $request->name;
-        $employee->section_id = $request->sectionId;
-        $employee->is_person = $request->isPerson;
-        $employee->id_card = $request->idCard;
-        $employee->number = $request->number;
-        $employee->employee_position_id = $request->positionId;
-        $employee->move_section_id = $request->MoveSectionId;
-        $employee->is_move_section = $request->isMoveSection;
-        $employee->employee_type_id = $request->typeId;
-        $employee->employee_center_id = $request->centerId;
-
-        if (isset($request->dateWork)) {
-            $employee->date_work = $request->dateWork;
-        }
-        if (isset($request->telegramId)) {
-            $employee->telegramId = $request->telegramId;
-        }
-        $employee->init_vacation = (isset($request->initVacation) && $request->initVacation != '') ?
-            $request->initVacation : 0;
-        $employee->take_vacation = (isset($request->takeVacation) && $request->takeVacation != '') ?
-            $request->takeVacation : 0;
-        $employee->init_vacation_sick = (isset($request->initVacationSick) && $request->initVacationSick != '') ?
-            $request->initVacationSick : 0;
-        $employee->take_vacation_sick = (isset($request->takeVacationSick) && $request->takeVacationSick != '') ?
-            $request->takeVacationSick : 0;
-        $employee->save();
-
-        return $this->ok(new EmployeeResource($employee));
-    }
+   
 
     /**
      * Display the specified resource.
@@ -259,35 +218,7 @@ class EmployeeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function updateOld(StoreEmployeeRequest $request, Employee $employee)
-    {
-        $employee->name = $request->name;
-        $employee->section_id = $request->sectionId;
-        $employee->move_section_id = $request->MoveSectionId;
-        $employee->is_move_section = $request->isMoveSection;
-        $employee->is_person = $request->isPerson;
-        $employee->id_card = $request->idCard;
-        $employee->number = $request->number;
-        $employee->employee_position_id = $request->positionId;
-        $employee->employee_type_id = $request->typeId;
-        $employee->employee_center_id = $request->centerId;
-        if (isset($request->dateWork)) {
-            $employee->date_work = $request->dateWork;
-        }
-        if (isset($request->telegramId)) {
-            $employee->telegramId = $request->telegramId;
-        }
-        $employee->init_vacation = (isset($request->initVacation) && $request->initVacation != '') ?
-            $request->initVacation : 0;
-        $employee->take_vacation = (isset($request->takeVacation) && $request->takeVacation != '') ?
-            $request->takeVacation : 0;
-        $employee->init_vacation_sick = (isset($request->initVacationSick) && $request->initVacationSick != '') ?
-            $request->initVacationSick : 0;
-        $employee->take_vacation_sick = (isset($request->takeVacationSick) && $request->takeVacationSick != '') ?
-            $request->takeVacationSick : 0;
-        $employee->save();
-        return $this->ok(new EmployeeResource($employee));
-    }
+ 
 
     /**
      * Remove the specified resource from storage.

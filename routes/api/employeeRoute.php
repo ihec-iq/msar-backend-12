@@ -52,6 +52,7 @@ Route::prefix('/hr_document')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/filter', [HrDocumentController::class, 'filter']);
     Route::get('/{id}', [HrDocumentController::class, 'show']);
     Route::get('/getHrByEmployee/{id}', [HrDocumentController::class, 'check_bonus_employee']);
+    Route::get('/getHrByEmployeeTotal/{id}', [HrDocumentController::class, 'check_bonus_employee_total']);
     Route::get('/updateEmployeeDateBonusByEmployee/{id}', [HrDocumentController::class, 'update_employee_date_bonus']);
     Route::post('/store', [HrDocumentController::class, 'store']);
     Route::post('/update/{id}', [HrDocumentController::class, 'update']);

@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Bonus\BonusDegreeStageResource;
 use App\Http\Resources\Hr\HrDocumentResource;
 use App\Http\Resources\Hr\HrDocumentResourceCollection;
 use App\Models\Employee;
 use App\Models\HrDocument;
 use App\Enum\EnumTypeChoseShareDocument;
 use App\Http\Resources\Employee\EmployeeResource;
+use App\Models\BonusDegreeStage;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -105,7 +107,7 @@ class HrDocumentController extends Controller
                     ->orderBy('add_days', 'DESC')
                     ->get()
                     ->take(4);
-                $repeted6Month = 0;//Log::info($HrDocuments);
+                $repeted6Month = 0; //Log::info($HrDocuments);
                 foreach ($HrDocuments as $row) {
                     if ($row->add_months == 6) {
                         if ($repeted6Month < 1) {
@@ -143,13 +145,114 @@ class HrDocumentController extends Controller
                 'id' => $employee->id,
                 'name' => $employee->name,
                 'currentDateBonus' => Carbon::parse($date_last_bonus)->format('Y-m-d'),
-                'numberIncreseDayes' => $increseDay  ,
-                'numberIncreseMonths' => $increseMonths ,
+                'numberIncreseDayes' => $increseDay,
+                'numberIncreseMonths' => $increseMonths,
                 'nextDateBonus' => Carbon::parse($date_last_bonus)->addYear(1)->addDay($increseDay * -1)->addMonths($increseMonths * -1)->format('Y-m-d'),
                 'Documents' => HrDocumentResource::collection($filteredArray)
             ];
-             return $result;
+            return $result;
         }
+    }
+
+
+    public function check_bonus_employee_total($employeeId)
+    {
+        $employee = Employee::find($employeeId);
+        if (!$employee) return response()->json(['message' => 'Employee not found'], 404);
+
+        $date_last_bonus = $employee->date_last_bonus; //return $date_last_bonus;
+        $degree_stage_id = $employee->degree_stage_id; //return $degree_stage_id;
+        $result = [];
+        if ($date_last_bonus) {
+            $nextBonus = $this->getNextBonus($employeeId,$employee->name ,$date_last_bonus,$degree_stage_id);
+            $result[] = $nextBonus;
+
+            $date_last_bonus = $nextBonus['nextDateBonus']; 
+            $degree_stage_id = $nextBonus['DegreeStage']['id'];
+            $nextBonus = $this->getNextBonus($employeeId,$employee->name, $date_last_bonus,$degree_stage_id);
+
+            while($nextBonus['Documents']->count() > 0) {
+                $result[] = $nextBonus;
+                $date_last_bonus = $nextBonus['nextDateBonus'];
+                $degree_stage_id = $nextBonus['DegreeStage']['id'];
+                $nextBonus = $this->getNextBonus($employeeId,$employee->name, $date_last_bonus,$degree_stage_id);
+            }
+        }
+
+
+        return $result;
+    }
+    public function getNextBonus($employeeId,$employeeName, $date_last_bonus,$degree_stage_id)
+    {
+        // $employee = Employee::find(id: $employeeId);
+        // if (!$employee) return response()->json(['message' => 'Employee not found'], 404);
+
+        $filteredArray = [];
+        $increseDay = 0;
+        $increseMonths = 0;
+        $date_last_bonus = Carbon::parse($date_last_bonus)->format('Y-m-d'); // Ensure date is in Y-m-d format
+        $nextDegreeStage = BonusDegreeStage::find($degree_stage_id+1);
+        Log::alert($nextDegreeStage->title ." at ".$date_last_bonus); 
+        if (!$nextDegreeStage) return response()->json(['message' => 'Next degree stage not found'], 404);
+        if ($date_last_bonus) {
+            #region Add Ponus
+            $HrDocuments = HrDocument::where('employee_id', $employeeId)
+                ->whereBetween('issue_date', [$date_last_bonus, Carbon::parse($date_last_bonus)->addYear()])
+                ->where("is_active", "=", true)
+                ->where(function ($query) {
+                    $query->where('add_days', '>', 0)
+                        ->orWhere('add_months', '>', 0);
+                })
+                ->with('Type')
+                ->orderBy('add_months', 'DESC')
+                ->orderBy('add_days', 'DESC')
+                ->get()
+                ->take(4);
+            $repeted6Month = 0; //Log::info($HrDocuments);
+            foreach ($HrDocuments as $row) {
+                if ($row->add_months == 6) {
+                    if ($repeted6Month < 1) {
+                        $repeted6Month++;
+                        $filteredArray[] = $row;
+                        $increseDay += $row->add_days;
+                        $increseMonths += $row->add_months;
+                    }
+                    continue;
+                }
+                $filteredArray[] = $row;
+                $increseDay += $row->add_days;
+                $increseMonths += $row->add_months;
+            }
+            #endregion
+            #region Add Subtract
+            $HrDocuments = HrDocument::where('employee_id', $employeeId)
+                ->whereBetween('issue_date', [$date_last_bonus, Carbon::parse($date_last_bonus)->addYear()])
+                ->where("is_active", "=", true)
+                ->where('add_days', '<', 0)
+                ->orWhere('add_months', '<', 0)
+                ->with('Type')
+                ->orderBy('add_months', 'DESC')
+                ->orderBy('add_days', 'DESC')
+                ->first();
+            if ($HrDocuments) {
+                $increseDay -= $HrDocuments->add_days;
+                $increseMonths -= $HrDocuments->add_months;
+                $filteredArray[] = $HrDocuments;
+            }
+            #endregion
+        }
+
+        $result = [
+            'id' => $employeeId,
+            'name' => $employeeName,
+            'currentDateBonus' => Carbon::parse($date_last_bonus)->format('Y-m-d'),
+            'numberIncreseDayes' => $increseDay,
+            'numberIncreseMonths' => $increseMonths,
+            'DegreeStage' => new BonusDegreeStageResource($nextDegreeStage),
+            'nextDateBonus' => Carbon::parse($date_last_bonus)->addYear(1)->addDay($increseDay * -1)->addMonths($increseMonths * -1)->format('Y-m-d'),
+            'Documents' => HrDocumentResource::collection($filteredArray)
+        ];
+        return $result;
     }
     public function get_check_bonus_employee($employeeId)
     {
@@ -292,6 +395,7 @@ class HrDocumentController extends Controller
         $employeeId = $request->employee_id;
 
         $data->title = $request->title;
+        $data->number = $request->number;
         $data->issue_date = $request->issue_date;
         $data->employee_id = $request->employee_id;
         $data->hr_document_type_id = $request->hr_document_type_id;
