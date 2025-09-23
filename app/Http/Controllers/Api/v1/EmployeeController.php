@@ -9,6 +9,7 @@ use App\Http\Requests\Employee\UpdateEmployeeBonusRequest;
 use App\Http\Requests\Employee\UpdateEmployeeRequest;
 use App\Http\Resources\Employee\EmployeeBigLiteResource;
 use App\Http\Resources\Employee\EmployeeBonusResource;
+use App\Http\Resources\Employee\EmployeeBonusTotalResource;
 use App\Http\Resources\Employee\EmployeeLiteBonusResource;
 use App\Http\Resources\Employee\EmployeeResource;
 use App\Http\Resources\Employee\EmployeeResourceCollection;
@@ -120,6 +121,49 @@ class EmployeeController extends Controller
             return $this->error(__('general.loadFailed'));
         } else {
             return $this->ok(new EmployeeResourceCollection($data));
+        }
+    }
+    public function filterWithBonus(Request $request)
+    {
+        $filter_bill = [];
+        $request->filled('limit') ? $limit = $request->limit : $limit = 10;
+        if (!$request->isNotFilled('name') && $request->name != '') {
+            $filter_bill[] = ['name', 'like', '%' . $request->name . '%'];
+        }
+        if (
+            !$request->isNotFilled('sectionId') &&
+            $request->sectionId != '' && $request->sectionId != '0' && $request->sectionId != '1'
+        ) {
+            $filter_bill[] = ['section_id', $request->sectionId];
+        }
+        if (
+            !$request->isNotFilled('isPerson') && $request->sectionId != ''
+        ) {
+            $filter_bill[] = ['is_person', $request->isPerson];
+        } else {
+            $filter_bill[] = ['is_person', true];
+        }
+        $data = Employee::orderBy('name')->where($filter_bill);
+        #region "Check Premission [vacation office ,vacation center ]"
+        $data = $data->whereHas('EmployeeType', function ($query) {
+            $employeeType = ["1"];
+            if (Auth::user()->hasAnyPermission(['vacation office'])) {
+                array_push($employeeType, "2");
+            }
+            if (Auth::user()->hasAnyPermission(['vacation center'])) {
+                array_push($employeeType, "3");
+            }
+            array_push($employeeType, "4");
+            $query->whereIn('id', $employeeType);
+        });
+
+        #endregion
+        $data = $data->paginate($limit);
+
+        if (empty($data) || $data == null) {
+            return $this->error(__('general.loadFailed'));
+        } else {
+            return $this->ok(data:  EmployeeBonusTotalResource::collection($data));
         }
     }
     public function filterLite(Request $request)

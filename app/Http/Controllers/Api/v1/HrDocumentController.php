@@ -9,9 +9,12 @@ use App\Http\Resources\Hr\HrDocumentResourceCollection;
 use App\Models\Employee;
 use App\Models\HrDocument;
 use App\Enum\EnumTypeChoseShareDocument;
+use App\Http\Resources\Bonus\BonusDegreeStageMiniResource;
 use App\Http\Resources\Employee\EmployeeResource;
+use App\Http\Resources\Hr\HrDocumentMiniResource;
 use App\Models\BonusDegreeStage;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
@@ -155,44 +158,77 @@ class HrDocumentController extends Controller
     }
 
 
-    public function check_bonus_employee_total($employeeId)
+    public function check_bonus_employee_total(Request $request, $employeeId)
     {
+        $attration = 4;
+        if ($request->has('attration')) {
+            $attration = $request->attration;
+        }
+        if ($attration <= 0) return response()->json([]);
+
         $employee = Employee::find($employeeId);
-        if (!$employee) return response()->json(['message' => 'Employee not found'], 404);
+        if (!$employee) {
+            return response()->json(['message' => 'Employee not found'], 404);
+        }
+
+        // If there's no baseline, there's nothing to compute
+        if (empty($employee->date_last_bonus))  return response()->json([]);
 
         $date_last_bonus = $employee->date_last_bonus; //return $date_last_bonus;
         $degree_stage_id = $employee->degree_stage_id; //return $degree_stage_id;
         $result = [];
         if ($date_last_bonus) {
-            $nextBonus = $this->getNextBonus($employeeId,$employee->name ,$date_last_bonus,$degree_stage_id);
+            $nextBonus = $this->getNextBonus(
+                $employee->id,
+                (string) $employee->name,
+                $date_last_bonus,
+                $degree_stage_id
+            );
             $result[] = $nextBonus;
 
-            $date_last_bonus = $nextBonus['nextDateBonus']; 
-            $degree_stage_id = $nextBonus['DegreeStage']['id'];
-            $nextBonus = $this->getNextBonus($employeeId,$employee->name, $date_last_bonus,$degree_stage_id);
+            $attration--;
+            if ($attration == 0) return $result;
 
-            while($nextBonus['Documents']->count() > 0) {
-                $result[] = $nextBonus;
+            $date_last_bonus = $nextBonus['nextDateBonus'];
+            $degree_stage_id = $nextBonus['DegreeStage']['id'];
+            $nextBonus = $this->getNextBonus(
+                $employee->id,
+                (string) $employee->name,
+                $date_last_bonus,
+                $degree_stage_id
+            );
+            $result[] = $nextBonus;
+            $attration--;
+            if ($attration == 0) return $result;
+
+            while ($nextBonus['nextDateBonus']  < Carbon::now()->addYear()) {
                 $date_last_bonus = $nextBonus['nextDateBonus'];
                 $degree_stage_id = $nextBonus['DegreeStage']['id'];
-                $nextBonus = $this->getNextBonus($employeeId,$employee->name, $date_last_bonus,$degree_stage_id);
+                $nextBonus = $this->getNextBonus(
+                    $employee->id,
+                    (string) $employee->name,
+                    $date_last_bonus,
+                    $degree_stage_id
+                );
+                $result[] = $nextBonus;
+                $attration--;
+                if ($attration == 0) return $result;
             }
         }
-
-
         return $result;
     }
-    public function getNextBonus($employeeId,$employeeName, $date_last_bonus,$degree_stage_id)
+    public function getNextBonus($employeeId, $employeeName, $date_last_bonus, $degree_stage_id)
     {
         // $employee = Employee::find(id: $employeeId);
         // if (!$employee) return response()->json(['message' => 'Employee not found'], 404);
 
         $filteredArray = [];
+        $TotalDocuments = [];
         $increseDay = 0;
         $increseMonths = 0;
         $date_last_bonus = Carbon::parse($date_last_bonus)->format('Y-m-d'); // Ensure date is in Y-m-d format
-        $nextDegreeStage = BonusDegreeStage::find($degree_stage_id+1);
-        Log::alert($nextDegreeStage->title ." at ".$date_last_bonus); 
+        $nextDegreeStage = BonusDegreeStage::find($degree_stage_id + 1);
+        //Log::alert($nextDegreeStage->title . " at " . $date_last_bonus);
         if (!$nextDegreeStage) return response()->json(['message' => 'Next degree stage not found'], 404);
         if ($date_last_bonus) {
             #region Add Ponus
@@ -222,7 +258,9 @@ class HrDocumentController extends Controller
                 $filteredArray[] = $row;
                 $increseDay += $row->add_days;
                 $increseMonths += $row->add_months;
+                if (count($filteredArray) == 3) break;
             }
+            $TotalDocuments = $HrDocuments;
             #endregion
             #region Add Subtract
             $HrDocuments = HrDocument::where('employee_id', $employeeId)
@@ -238,6 +276,7 @@ class HrDocumentController extends Controller
                 $increseDay -= $HrDocuments->add_days;
                 $increseMonths -= $HrDocuments->add_months;
                 $filteredArray[] = $HrDocuments;
+                $TotalDocuments[] = $HrDocuments;
             }
             #endregion
         }
@@ -248,9 +287,11 @@ class HrDocumentController extends Controller
             'currentDateBonus' => Carbon::parse($date_last_bonus)->format('Y-m-d'),
             'numberIncreseDayes' => $increseDay,
             'numberIncreseMonths' => $increseMonths,
-            'DegreeStage' => new BonusDegreeStageResource($nextDegreeStage),
+            'DegreeStage' => new BonusDegreeStageMiniResource($nextDegreeStage),
             'nextDateBonus' => Carbon::parse($date_last_bonus)->addYear(1)->addDay($increseDay * -1)->addMonths($increseMonths * -1)->format('Y-m-d'),
-            'Documents' => HrDocumentResource::collection($filteredArray)
+            'Documents' => HrDocumentMiniResource::collection($filteredArray),
+            'TotalDocuments' =>  HrDocumentMiniResource::collection($TotalDocuments),
+
         ];
         return $result;
     }
