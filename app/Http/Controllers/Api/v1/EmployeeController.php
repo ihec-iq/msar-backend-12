@@ -124,11 +124,12 @@ class EmployeeController extends Controller
         }
     }
     public function filterWithBonus(Request $request)
-    {
+    {Log::alert($request->all());
         $filter_bill = [];
+        $name = $request->name ?? $request->employeeName;
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
-        if (!$request->isNotFilled('name') && $request->name != '') {
-            $filter_bill[] = ['name', 'like', '%' . $request->name . '%'];
+        if ($name != '') {
+            $filter_bill[] = ['name', 'like', '%' . $name . '%'];
         }
         if (
             !$request->isNotFilled('sectionId') &&
@@ -163,7 +164,7 @@ class EmployeeController extends Controller
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {
-            return $this->ok(data:  EmployeeBonusTotalResource::collection($data));
+            return $this->ok( new PaginatedResourceCollection($data, EmployeeBonusTotalResource::class));
         }
     }
     public function filterLite(Request $request)

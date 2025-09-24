@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Employee;
 
 use App\Http\Resources\Bonus\BonusDegreeStageResource;
+use App\Http\Resources\Bonus\BonusWithoutEmployeeResource;
 use App\Http\Resources\GeneralIdNameResource;
 use App\Http\Resources\User\SectionResource;
 use App\Http\Resources\User\UserLiteResource;
@@ -16,47 +17,37 @@ class EmployeeBonusTotalResource extends JsonResource
      *
      * @return array<string, mixed>
      */
+
     public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
+            'checked' => 0,
             'name' => $this->name,
-            'isPerson' => $this->is_person,
             'dateWork' => $this->date_work,
+            'current' => [
+                'number' => $this->number_last_bonus,
+                'dateBonus' => $this->date_last_bonus,
+                'numberPromotion' => $this->number_last_promotion,
+                'datePromotion' => $this->date_last_promotion,
+                'degreeStage' => 'الدرجة ' . $this->DegreeStage->Degree->name . ' المرحلة ' . $this->DegreeStage->Stage->name,
+                'stage' =>   $this->DegreeStage->Stage->name,
+                'degree' =>   $this->DegreeStage->Degree->name,
+                'salary' => $this->DegreeStage->salary,
+                'notes' => $lastBonus->notes ?? "",
+            ],
+            'position' => $this->EmployeePosition->name,
+            'center' => $this->EmployeeCenter->name,
+            'section' => $this->Section->name,
+            'department' => $this->Section->Department->name,
+            'type' => $this->EmployeeType->name,
+            'jobTitle' => $this->BonusJobTitle->name,
+            'study' => $this->Study->name,
+            'certificate' => $this->Certificate->name,
+            'notes' => '',
+            'LastBonus' => new BonusWithoutEmployeeResource($this->Bonus->last()) ?? "",
             'getBonusEmployeeTotal' => $this->getBonusEmployeeTotal,
-            //'UserId' => $this->user_id,
-            //'UserName' => $this->User->name,
-            //'SectionId' => $this->section_id,
-            //'SectionName' => $this->Section->name,
-            //'PositionId' => $this->employee_position_id,
-            //'PositionName' => $this->EmployeePosition->name,
-            //'TypeId' => $this->employee_type_id,
-            //'TypeName' => $this->EmployeeType->name,
-            'User' => new UserLiteResource($this->User),
-            'Section' => new SectionResource($this->Section),
-            'isMoveSection' => $this->is_move_section,
-            'MoveSection' => new SectionResource($this->MoveSection),
-            'EmployeePosition' => new EmployeePositionResource($this->EmployeePosition),
-            'EmployeeCenter' => new EmployeeCenterResource($this->EmployeeCenter),
-            'EmployeeType' => new EmployeeTypeResource($this->EmployeeType),
-            'countItems' => count($this->outputVouchers),
-            'Items' => $this->outputVouchers,
-            'SumItems' => $this->outputVouchers,
-            'number' => $this->number,
-            'idCard' => $this->id_card,
-            'telegramId' => $this->telegram,
-            'numberLastBonus' => $this->number_last_bonus,
-            'dateLastBonus' => $this->date_last_bonus,
-            'dateNextBonus' => $this->date_next_bonus,
-            'difNextBonusDate' => $this->getDifNextBonusDateAttribute(),
-            'numberLastPromotion' => $this->number_last_promotion,
-            'dateLastPromotion' => $this->date_last_promotion,
-            'dateNextPromotion' => $this->date_next_promotion,
-            'difNextPromotionDate' => $this->getDifNextPromotionDateAttribute(),
-            'BonusJobTitle' => new GeneralIdNameResource($this->BonusJobTitle),
-            'Study' => new GeneralIdNameResource($this->Study),
-            'Certificate' => new GeneralIdNameResource($this->Certificate),
-            'DegreeStage' => new BonusDegreeStageResource($this->DegreeStage),
+
         ];
     }
 
