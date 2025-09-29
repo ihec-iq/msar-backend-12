@@ -35,6 +35,7 @@ class EmployeeBonusTotalResource extends JsonResource
                 'degree' =>   $this->DegreeStage->Degree->name,
                 'salary' => $this->DegreeStage->salary,
                 'notes' => $lastBonus->notes ?? "",
+                'difBonusDate' => $this->getDifNextBonusDateAttribute(),
             ],
             'position' => $this->EmployeePosition->name,
             'center' => $this->EmployeeCenter->name,

@@ -158,6 +158,27 @@ class EmployeeController extends Controller
             $query->whereIn('id', $employeeType);
         });
 
+        if ($request->isBound == 'true' || $request->isBound == 1) {
+            $SettingNumberDayesAlertBonus = "30";
+            $local = $SettingNumberDayesAlertBonus;
+            if (!$request->isNotFilled('bound') && $request->bound != '') {
+                $local =   $request->bound;
+            } else {
+                $local = Setting::where("key", "SettingNumberDayesAlertBonus")->first()->val_int;
+                if ($local) {
+                    $SettingNumberDayesAlertBonus = $local;
+                }
+            }
+
+            if ($local != '' && $local != null) {
+                $SettingNumberDayesAlertBonus = $local;
+            }
+
+            $data = $data->where(function ($query) use ($SettingNumberDayesAlertBonus) {
+                $query->whereRaw('DATEDIFF(date_next_bonus,NOW()) <= ?', $SettingNumberDayesAlertBonus);
+            });
+        }
+
         #endregion
         $data = $data->paginate($limit);
 

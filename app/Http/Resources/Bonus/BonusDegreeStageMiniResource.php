@@ -18,6 +18,9 @@ class BonusDegreeStageMiniResource extends JsonResource
         return [
             'id' => $this->id,
             'title' =>   $this->title,
+            'degree'=> $this->Degree->name,
+            'stage'=> $this->Stage->name, 
+            'salary' => $this->salary,
         ];
     }
 }

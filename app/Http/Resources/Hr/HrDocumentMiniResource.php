@@ -19,9 +19,10 @@ class HrDocumentMiniResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [ 
+        return [
             'title' => $this->title,
             'number' => $this->number,
+            'date' => $this->issue_date,
             'addDays' => $this->add_days,
             'addMonths' => $this->add_months,
             'issueDate' => $this->issue_date,
