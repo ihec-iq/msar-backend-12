@@ -124,9 +124,10 @@ class EmployeeController extends Controller
         }
     }
     public function filterWithBonus(Request $request)
-    {Log::alert($request->all());
+    {
         $filter_bill = [];
         $name = $request->name ?? $request->employeeName;
+        $attraction = $request->attraction ?? 4;
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
         if ($name != '') {
             $filter_bill[] = ['name', 'like', '%' . $name . '%'];

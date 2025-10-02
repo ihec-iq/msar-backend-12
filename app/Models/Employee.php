@@ -107,7 +107,7 @@ class Employee extends Model
     {
         return $this->hasOne(Bonus::class)->latestOfMany();
     }
-    public function getGetBonusEmployeeTotalAttribute($attraction = null)
+    public function getGetBonusEmployeeTotalAttribute($attraction = 4)
     {
         $hrDocument = new HrDocumentController();
         return $hrDocument->check_bonus_employee_total(request()->merge(['attraction' => $attraction]), $this->id);
