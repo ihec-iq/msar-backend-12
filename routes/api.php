@@ -1,7 +1,5 @@
 <?php
 
-//use App\Http\Controllers\Api\V1\GoogleDriveController;
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

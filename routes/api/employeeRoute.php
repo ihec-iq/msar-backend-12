@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\v1\BonusController;
 use App\Http\Controllers\Api\v1\BonusesController;
 use App\Http\Controllers\Api\v1\BonusJobTitleController;
 use App\Http\Controllers\Api\v1\EmployeeCenterController;
-use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\v1\EmployeeController;
 use App\Http\Controllers\Api\v1\EmployeePositionController;
 use App\Http\Controllers\Api\v1\EmployeeTypeController;
 use App\Http\Controllers\Api\v1\HrDocumentController;
