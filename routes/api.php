@@ -1,5 +1,7 @@
 <?php
 
+use App\Jobs\RunBackupJob;
+use App\Models\BackupSetting;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -32,4 +34,11 @@ Route::get('/setBotWebhook/{site}', function ($site) {
     $url = 'https://api.telegram.org/bot'.env('TELEGRAM_BOT_TOKEN').'/setWebhook?url=https://'.$site.'/ihec-backend/public/api/bot/onBoard&drop_pending_updates=true';// return $url;
     $reposnse = Http::get($url);
     return response()->json($reposnse->json());
+});
+
+Route::post('/backup/run', function () {
+    $s = BackupSetting::first();
+    abort_unless($s && $s->enabled, 400, 'Backup disabled.');
+    dispatch_sync(new RunBackupJob('manual')); // فوري للـ response
+    return response()->json(['status' => 'ok', 'ran_at' => now()]);
 });
