@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->string('email')->nullable();
             $table->string('telegram_id')->nullable();
             $table->boolean('active')->default(true);
-            $table->json('notify_via')->default(json_encode(['telegram', 'email'])); // ["telegram","email"]
+            $table->json('notify_via'); // ["telegram","email"]
             $table->timestamps();
         });
     }
