@@ -15,6 +15,9 @@ require __DIR__.'/api/vacationRoute.php';
 require __DIR__.'/api/botRoute.php';
 require __DIR__.'/api/settingRoute.php';
 require __DIR__.'/api/promotionRoute.php';
+require __DIR__.'/api/backupRoute.php';
+
+
 
 Route::get(uri:'/check', action:function (): \Illuminate\Http\JsonResponse {
     return response()->json(data:    ['state' => 'ERP MSAR API running...']);
@@ -36,9 +39,9 @@ Route::get('/setBotWebhook/{site}', function ($site) {
     return response()->json($reposnse->json());
 });
 
-Route::post('/backup/run', function () {
-    $s = BackupSetting::first();
-    abort_unless($s && $s->enabled, 400, 'Backup disabled.');
-    dispatch_sync(new RunBackupJob('manual')); // فوري للـ response
-    return response()->json(['status' => 'ok', 'ran_at' => now()]);
-});
+// Route::post('/backup/run', function () {
+//     $s = BackupSetting::first();
+//     abort_unless($s && $s->enabled, 400, 'Backup disabled.');
+//     dispatch_sync(new RunBackupJob('manual')); // فوري للـ response
+//     return response()->json(['status' => 'ok', 'ran_at' => now()]);
+// });

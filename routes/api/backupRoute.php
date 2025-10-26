@@ -1,0 +1,29 @@
+<?php
+
+use App\Http\Controllers\Api\v1\BackupAdminController;
+use App\Http\Controllers\Api\v1\BackupController;
+use App\Http\Controllers\Api\v1\BackupHealthController;
+use App\Http\Controllers\Api\v1\BackupSettingsController;
+use Illuminate\Support\Facades\Route;
+// مبدئيًا بدون Sanctum، لاحقًا تضيف ->middleware('auth:sanctum')
+Route::prefix('backup')->group(function () {
+    // الإعدادات
+    Route::get('settings', [BackupSettingsController::class, 'show']);
+    Route::put('settings', [BackupSettingsController::class, 'update']);
+
+    // تشغيل يدوي + قائمة + حذف + رابط تحميل مؤقت + استعادة
+    Route::post('run', [BackupController::class, 'runNow']);
+    Route::get('list', [BackupController::class, 'list']);             // قائمة النسخ من القرص
+    Route::delete('delete', [BackupController::class, 'delete']);      // ?path=...
+    Route::post('temp-link', [BackupController::class, 'tempLink']);   // {path} → رابط مؤقت
+    Route::post('restore', [BackupController::class, 'restore']);      // استعادة DB/Files
+});
+
+// فحص الحالة
+Route::get('health/backup', [BackupHealthController::class, 'status']);
+Route::prefix('backup/admins')->group(function () {
+    Route::get('/', [BackupAdminController::class, 'index']);
+    Route::post('/', [BackupAdminController::class, 'store']);
+    Route::put('/{backupAdmin}', [BackupAdminController::class, 'update']);
+    Route::delete('/{backupAdmin}', [BackupAdminController::class, 'destroy']);
+});

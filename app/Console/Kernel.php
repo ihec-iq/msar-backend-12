@@ -10,19 +10,37 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
-    protected function schedule(Schedule $schedule): void
+    
+    protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule): void
     {
+        // موجود سابقاً: dynamic-backup-runner ...
+
+        // مراقبة Stale
         $schedule->call(function () {
-            $s = BackupSetting::first();
-            if (!$s || !$s->enabled) return;
+            $s = \App\Models\BackupSetting::first();
+            if (!$s || !$s->notify_enabled) return;
 
-            $cron = new CronExpression($s->cron);
-            // نستخدم التوقيت الذي حدده المستخدم
-            $now = now($s->timezone ?? 'Asia/Baghdad');
+            $staleHours = (int) ($s->stale_hours ?? 48);
+            $last = \App\Models\BackupLog::where('status', 'success')->latest('finished_at')->first();
+            if (!$last) return;
 
-            if ($cron->isDue($now)) {
-                dispatch(new RunBackupJob('auto'));
+            $age = now()->diffInHours($last->finished_at);
+            if ($age <= $staleHours) return;
+
+            // أرسل تنبيه أول ثم كل 24 ساعة
+            $key = 'backup_stale_last_notice_at';
+            $lastNotice = cache()->get($key);
+            if (!$lastNotice || now()->diffInHours($lastNotice) >= 24) {
+                // اصنع Log افتراضي لتمريره للـ NotificationManager
+                $log = new \App\Models\BackupLog([
+                    'status' => 'failed', // نعامله كتحذير
+                    'message' => "No fresh backups for {$age} hours",
+                    'backup_paths' => [],
+                    'total_size' => 0,
+                ]);
+                \App\Support\NotificationManager::notify($log);
+                cache()->forever($key, now());
             }
-        })->everyMinute()->name('dynamic-backup-runner')->withoutOverlapping();
+        })->everyMinute()->name('backup-stale-monitor');
     }
 }

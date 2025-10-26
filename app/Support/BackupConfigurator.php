@@ -1,5 +1,5 @@
 <?php
-// app/Support/BackupConfigurator.php
+
 namespace App\Support;
 
 use App\Models\BackupSetting;
@@ -7,47 +7,52 @@ use Illuminate\Support\Facades\Config;
 
 class BackupConfigurator
 {
-    public static function apply(?BackupSetting $s = null): void
+    public static function apply(?BackupSetting $settings = null): void
     {
-        $s ??= BackupSetting::first();
-        if (!$s || !$s->enabled) return;
+        $settings ??= BackupSetting::first();
+        if (!$settings || !$settings->enabled) return;
 
-        // القرص
-        Config::set('backup.destination.disks', [$s->disk]);
+        // وجهة التخزين
+        Config::set('backup.destination.disks', [$settings->disk]);
 
-        // ملفات + قواعد
-        if ($s->include_files) {
-            Config::set('backup.backup.source.files.include', $s->include_paths ?: [base_path()]);
-            Config::set('backup.backup.source.files.exclude', $s->exclude_paths ?: []);
+        // قواعد البيانات (إن وُجد تعدد قواعد نأخذ المحددة، وإلا mysql)
+        $dbs = ($settings->multi_db && $settings->selected_databases)
+            ? $settings->selected_databases
+            : ['mysql'];
+        Config::set('backup.backup.source.databases', $dbs);
+
+        // 🔒 الملفات: فقط storage/app/public (حسب طلبك)
+        if ($settings->include_files) {
+            Config::set('backup.backup.source.files', [
+                'include' => [ storage_path('app/public') ],
+                'exclude' => [],
+                'follow_links' => false,
+                'ignore_unreadable_directories' => false,
+                'relative_path' => base_path(),
+            ]);
         } else {
-            // بدون ملفات
-            Config::set('backup.backup.source.files.include', []);
-            Config::set('backup.backup.source.files.exclude', []);
+            Config::set('backup.backup.source.files', [
+                'include' => [],
+                'exclude' => [],
+                'follow_links' => false,
+                'ignore_unreadable_directories' => false,
+                'relative_path' => base_path(),
+            ]);
         }
-        // مفاتيح files الإضافية المطلوبة بواسطة Spatie v9+
-        Config::set('backup.backup.source.files.follow_links', false);
-        Config::set('backup.backup.source.files.ignore_unreadable_directories', false);
-        Config::set('backup.backup.source.files.relative_path', base_path());
 
-        // قواعد البيانات (واحدة أو عدة)
-        Config::set(
-            'backup.backup.source.databases',
-            ($s->multi_db && $s->selected_databases) ? $s->selected_databases : ['mysql']
-        );
+        // سياسات الاحتفاظ
+        Config::set('backup.cleanup.default_strategy.keep_all_backups_for_days', $settings->keep_daily_days);
+        Config::set('backup.cleanup.default_strategy.keep_daily_backups_for_days', $settings->keep_daily_days);
+        Config::set('backup.cleanup.default_strategy.keep_weekly_backups_for_weeks', $settings->keep_weekly_weeks);
+        Config::set('backup.cleanup.default_strategy.keep_monthly_backups_for_months', $settings->keep_monthly_months);
+        Config::set('backup.cleanup.default_strategy.keep_yearly_backups_for_years', $settings->keep_yearly_years);
+        Config::set('backup.cleanup.default_strategy.delete_oldest_backups_when_using_more_megabytes_than', $settings->max_storage_mb);
 
-        // سياسات الاحتفاظ + الحد الأعلى للمساحة
-        Config::set('backup.cleanup.default_strategy.keep_all_backups_for_days', $s->keep_daily_days);
-        Config::set('backup.cleanup.default_strategy.keep_daily_backups_for_days', $s->keep_daily_days);
-        Config::set('backup.cleanup.default_strategy.keep_weekly_backups_for_weeks', $s->keep_weekly_weeks);
-        Config::set('backup.cleanup.default_strategy.keep_monthly_backups_for_months', $s->keep_monthly_months);
-        Config::set('backup.cleanup.default_strategy.keep_yearly_backups_for_years', $s->keep_yearly_years);
-        Config::set('backup.cleanup.default_strategy.delete_oldest_backups_when_using_more_megabytes_than', $s->max_storage_mb);
-
-        // (اختياري) الإشعارات بالبريد — نضبطها لاحقًا عند إرسال تقاريرنا المخصصة
-        // Config::set('backup.notifications.mail.to', [...]);
+        // إشعارات البريد الافتراضية (لن نستخدمها كثيرًا لأننا نرسل عبر NotificationManager)
+        $emails = collect(explode(',', (string) $settings->emails))->map('trim')->filter()->values()->all();
+        Config::set('backup.notifications.mail.to', $emails);
 
         // المنطقة الزمنية
-        Config::set('app.timezone', $s->timezone ?? 'Asia/Baghdad');
+        Config::set('app.timezone', $settings->timezone ?? 'Asia/Baghdad');
     }
 }
-
