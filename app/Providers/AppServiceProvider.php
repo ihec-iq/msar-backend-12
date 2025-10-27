@@ -17,15 +17,12 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
-     */
+     */ 
     public function boot(): void
     {
-        // لو APP_URL عندك https، خلّي Laravel يجبر نفس الشي
         if (str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
-
-        // إجبار الجذر على APP_URL (مهم إذا لديك أكثر من دومين/بروكسي)
         if (config('app.url')) {
             URL::forceRootUrl(config('app.url'));
         }

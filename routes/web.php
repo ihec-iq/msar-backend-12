@@ -12,41 +12,39 @@ Route::get('/test', function () {
 });
  
 
-Route::get('/download/backup', function (\Illuminate\Http\Request $r) {
-    // تجاهل بارامترات زائدة من بروكسي/UTM
+Route::get('/download/backup', function (Request $r) {
+    // تجاهل بارامترات يضيفها البروكسي/UTM الخ..
     $ignore = [
         'utm_source','utm_medium','utm_campaign','utm_term','utm_content',
-        'gclid','fbclid','__cf_chl_tk','__cf_chl_captcha_tk__','__cf_chl_f_tk',
-        '__cf_bm','t','s'
+        'gclid','fbclid','__cf_bm','t','s'
     ];
 
-    // ✅ تحقّق من التوقيع أولاً (على النص المشفّر كما هو)
-    if (! URL::hasValidSignature($r, absolute: true, ignoreQuery: $ignore)) {
+    // ✅ اجعل التحقق "نسبي" (absolute = false) لتفادي اختلاف الدومين/البروتوكول
+    if (! URL::hasValidSignature($r, false, $ignore)) {
+        // Debug اختياري:
+        // \Log::info('sig_failed', ['full' => $r->fullUrl(), 'app_url' => config('app.url')]);
         abort(403);
     }
 
-    // تحقق المدخلات المطلوبة
     $r->validate([
         'disk' => ['required','string'],
-        'p'    => ['required','string'], // المسار مشفّر
+        'p'    => ['required','string'], // path مشفّر Base64 (url-safe)
     ]);
 
-    // فك التشفير Base64 URL-safe
+    // فك ترميز Base64 (url-safe)
     $p = $r->query('p');
-    $pad = strlen($p) % 4 ? str_repeat('=', 4 - strlen($p) % 4) : '';
+    $pad  = strlen($p) % 4 ? str_repeat('=', 4 - strlen($p) % 4) : '';
     $path = base64_decode(strtr($p.$pad, '-_', '+/'), true);
-
-    if ($path === false) abort(400, 'Invalid path encoding');
+    abort_if($path === false, 400, 'Invalid path encoding');
 
     $disk = (string) $r->query('disk');
     $fs = Storage::disk($disk);
-
     abort_unless($fs->exists($path), 404);
 
     $filename = basename($path);
     return response($fs->get($path), 200, [
         'Content-Type' => 'application/zip',
-        'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         'Cache-Control' => 'private, max-age=0, no-cache',
     ]);
 })->name('backup.download');
