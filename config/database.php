@@ -63,7 +63,7 @@ return [
             // ✅ إعدادات Spatie DbDumper على ويندوز
             'dump' => [
                 'dump_binary_path' => match (PHP_OS_FAMILY) {
-                    'Windows' => 'C:/xampp/mysql/bin', // بيئة التطوير (ويندوز)
+                    'Windows' => 'D:/xampp/mysql/bin', // بيئة التطوير (ويندوز)
                     'Darwin'  => '/usr/local/mysql/bin', // اختياري: macOS
                     default   => '/usr/bin', // أي نظام آخر (لينكس / VPS)
                 },
