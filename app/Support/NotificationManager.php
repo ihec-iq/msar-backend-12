@@ -53,14 +53,20 @@ class NotificationManager
         // إعداد الملفات/المسارات والروابط المؤقتة
         $disk   = $log->storage_disk ?? ($settings->disk ?? 'local');
         $paths  = (array)($log->backup_paths ?? []);
-        $expiry = max(1, (int)($settings->temp_link_expiry ?? 60)); // بالدقائق
-
+        $expiryMinutes = max(1, (int)($settings->temp_link_expiry ?? 60)); // بالدقائق
+        $encode = fn(string $s) => rtrim(strtr(base64_encode(string: $s), '+/', '-_'), '=');
         $tempUrls = [];
+        // Helper inline function for safe Base64 encoding
+
+        $expiryMinutes = max(1, (int) ($s->temp_link_expiry ?? 60));
         foreach ($paths as $p) {
             $tempUrls[$p] = url()->temporarySignedRoute(
                 'backup.download',
-                now()->addMinutes($expiry),
-                ['disk' => $disk, 'path' => $p]
+                now()->addMinutes($expiryMinutes),
+                [
+                    'disk' => $disk,
+                    'p'    => $encode($p), // ← استخدم p بدل path
+                ]
             );
         }
 
