@@ -54,11 +54,9 @@ class NotificationManager
         $disk   = $log->storage_disk ?? ($settings->disk ?? 'local');
         $paths  = (array)($log->backup_paths ?? []);
         $expiryMinutes = max(1, (int)($settings->temp_link_expiry ?? 60)); // بالدقائق
-        $encode = fn(string $s) => rtrim(strtr(base64_encode(string: $s), '+/', '-_'), '=');
+        $encode = fn(string $s) => rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
         $tempUrls = [];
-        // Helper inline function for safe Base64 encoding
 
-        $expiryMinutes = max(1, (int) ($s->temp_link_expiry ?? 60));
         foreach ($paths as $p) {
             $tempUrls[$p] = url()->temporarySignedRoute(
                 'backup.download',
@@ -108,33 +106,49 @@ class NotificationManager
 
             foreach ($chatIds as $chatId) {
                 try {
-                    // أرسل الرسالة النصية أولاً
+                    // إرسال الرسالة النصية أولاً
                     Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
                         'chat_id' => $chatId,
                         'text' => $tgText,
                         'parse_mode' => 'HTML',
                     ]);
 
-                    // حاول إرفاق كل ملف إن كان صغيرًا، وإلا أرسل الرابط فقط
+                    // إرسال الملفات
                     foreach ($paths as $p) {
-                        $size = null;
                         try {
-                            $size = Storage::disk($disk)->size($p);
-                        } catch (\Throwable $e) {
-                        }
+                            $fs = Storage::disk($disk);
+                            if (!$fs->exists($p)) {
+                                continue;
+                            }
 
-                        if (is_int($size) && $size <= $attachmentLimit && isset($tempUrls[$p])) {
-                            // Telegram يدعم document=URL مباشر
-                            Http::post("https://api.telegram.org/bot{$token}/sendDocument", [
-                                'chat_id'  => $chatId,
-                                'document' => $tempUrls[$p],
-                                'caption'  => "Backup file: " . basename($p),
-                            ]);
-                        } elseif (isset($tempUrls[$p])) {
-                            Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
-                                'chat_id' => $chatId,
-                                'text'    => "Large file — download: " . $tempUrls[$p],
-                            ]);
+                            $size = $fs->size($p);
+                            $fileName = basename($p);
+
+                            // للملفات الصغيرة (<= 25MB)، نرسلها مباشرة
+                            if ($size <= $attachmentLimit) {
+                                $fileContent = $fs->get($p);
+                                $sizeKB = round($size / 1024, 2);
+
+                                Http::attach(
+                                    'document',
+                                    $fileContent,
+                                    $fileName
+                                )->post("https://api.telegram.org/bot{$token}/sendDocument", [
+                                    'chat_id' => $chatId,
+                                    'caption' => "📦 {$fileName}\nSize: {$sizeKB} KB",
+                                ]);
+                            } else {
+                                // للملفات الكبيرة، نرسل رابط التحميل
+                                if (isset($tempUrls[$p])) {
+                                    $sizeMB = round($size / (1024 * 1024), 2);
+                                    Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+                                        'chat_id' => $chatId,
+                                        'text'    => "📦 Large file ({$sizeMB} MB)\n\nDownload: {$tempUrls[$p]}",
+                                    ]);
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            // تجاهل أخطاء الملفات الفردية واستمر
                         }
                     }
                 } catch (\Throwable $e) {
@@ -148,43 +162,29 @@ class NotificationManager
         // 2) Email
         // ===========================
         if (!empty($emails)) {
+            // جهّز مرفقات صغيرة فقط
+            $attachments = [];
+            foreach ($paths as $p) {
+                try {
+                    $size = Storage::disk($disk)->size($p);
+                    if ($size <= $attachmentLimit) {
+                        $data = Storage::disk($disk)->get($p);
+                        $attachments[] = ['name' => basename($p), 'data' => $data];
+                    }
+                } catch (\Throwable $e) {
+                    // تجاهل الأخطاء
+                }
+            }
+
             foreach ($emails as $to) {
                 try {
-                    $subject = "[Backup] " . strtoupper($event) . " - " . config('app.name');
-                    $textLines = [];
-                    $textLines[] = "Event: {$payload['event']}";
-                    $textLines[] = "Time: {$payload['timestamp']}";
-                    $textLines[] = "Type: {$payload['type']}";
-                    $textLines[] = "Size: " . number_format($payload['size']) . " bytes";
-                    $textLines[] = "Message: {$payload['message']}";
-                    if (!empty($payload['temp_urls'])) {
-                        $textLines[] = "Files:";
-                        foreach ($payload['temp_urls'] as $path => $url) {
-                            $textLines[] = basename($path) . " -> " . $url;
-                        }
-                    }
-                    $body = implode("\n", $textLines);
-
-                    // جهّز مرفقات صغيرة فقط
-                    $attachments = [];
-                    foreach ($paths as $p) {
-                        try {
-                            $size = Storage::disk($disk)->size($p);
-                            if ($size <= $attachmentLimit) {
-                                $data =  Storage::disk($disk)->get($p);
-                                $attachments[] = ['name' => basename($p), 'data' => $data];
-                            }
-                        } catch (\Throwable $e) {
-                        }
-                    }
-
-                    Mail::send([], [], function ($message) use ($to, $subject, $body, $attachments) {
-                        $message->to($to)->subject($subject);
-                        $message->setBody($body, 'text/plain');
-                        foreach ($attachments as $att) {
-                            $message->attachData($att['data'], $att['name']);
-                        }
-                    });
+                    Mail::to($to)->send(
+                        new \App\Mail\BackupNotificationMail(
+                            payload: $payload,
+                            event: $event,
+                            attachmentData: $attachments
+                        )
+                    );
                 } catch (\Throwable $e) {
                     // \Log::error('Mail notify error: '.$e->getMessage());
                 }

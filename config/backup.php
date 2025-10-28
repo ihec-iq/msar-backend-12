@@ -4,15 +4,11 @@ return [
     'backup' => [
         'source' => [
             'files' => [
-                'include' => [base_path()],
-                'exclude' => [
-                    base_path('vendor'),
-                    base_path('node_modules'),
-                    storage_path('app/backups'),
-                ],
+                'include' => [storage_path('app/public')],
+                'exclude' => [],
                 'follow_links' => false,
                 'ignore_unreadable_directories' => false,
-                'relative_path' => base_path(), // ✅ هذا اللي كان يسبب الخطأ السابق
+                'relative_path' => null,
             ],
             'databases' => ['mysql'],
         ],
@@ -40,6 +36,7 @@ return [
             \Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification::class => ['mail'],
             \Spatie\Backup\Notifications\Notifications\UnhealthyBackupWasFoundNotification::class => ['mail'],
             \Spatie\Backup\Notifications\Notifications\CleanupHasFailedNotification::class => ['mail'],
+            \Spatie\Backup\Notifications\Notifications\CleanupWasSuccessfulNotification::class => ['mail'],
             \Spatie\Backup\Notifications\Notifications\BackupWasSuccessfulNotification::class => ['mail'],
         ],
         'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,

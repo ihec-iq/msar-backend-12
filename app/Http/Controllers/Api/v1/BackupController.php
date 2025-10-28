@@ -8,35 +8,48 @@ use App\Jobs\RunBackupJob;
 use App\Models\BackupSetting;
 use App\Support\StorageManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class BackupController extends Controller
 {
     // تشغيل يدوي
-    public function runNow()
+    public function runNow(Request $request)
     {
-        $s = BackupSetting::firstOrFail();
-        abort_unless($s->enabled, 400, 'Backup disabled.');
-        dispatch_sync(new RunBackupJob('manual'));
-        
-        return response()->json(['status' => 'ok', 'ran_at' => now()]);
+        $backupSetting = BackupSetting::firstOrFail();
+        abort_unless($backupSetting->enabled, 400, 'Backup disabled.');
+
+        // التحقق من صحة المدخلات
+        $request->validate([
+            'backup_type' => ['nullable', 'in:db,files,both'],
+        ]);
+
+        // إذا لم يرسل backup_type، نأخذ من الإعدادات
+        $backupType = $request->input('backup_type');
+
+        dispatch_sync(new RunBackupJob('manual', $backupType));
+
+        return response()->json([
+            'status' => 'ok',
+            'ran_at' => now(),
+            'backup_type' => $backupType ?? ($backupSetting->include_files ? 'both' : 'db')
+        ]);
     }
 
     // قائمة النسخ (نعرض .zip فقط)
-    public function list(Request $r)
+    public function list(Request $request)
     {
-        $s = BackupSetting::firstOrFail();
-        $disk = $s->disk;
-        $prefix = 'Backups/'.preg_replace('/[^a-z0-9\-_]+/i', '-', config('app.name', 'laravel'));
+        $backupSetting = BackupSetting::firstOrFail();
+        $disk = $backupSetting->disk;
+        $prefix = 'Backups/' . preg_replace('/[^a-z0-9\-_]+/i', '-', config('app.name', 'laravel'));
         $files = StorageManager::listZipFiles($disk, $prefix);
 
-        $data = array_map(function ($p) use ($disk) {
-            $fs = Storage::disk($disk);
+        $data = array_map(function ($path) use ($disk) {
+            $diskFs = Storage::disk($disk);
             return [
-                'path' => $p,
-                'size' => $fs->size($p),
-                'lastModified' => $fs->lastModified($p),
+                'path' => $path,
+                'size' => $diskFs->size($path),
+                'lastModified' => $diskFs->lastModified($path),
                 'url' => null, // سنوفر عبر tempLink
             ];
         }, $files);
@@ -45,36 +58,270 @@ class BackupController extends Controller
     }
 
     // حذف نسخة
-    public function delete(Request $r)
+    public function delete(Request $request)
     {
-        $r->validate(['path' => ['required','string']]);
-        $s = BackupSetting::firstOrFail();
-        $ok = Storage::disk($s->disk)->delete($r->string('path'));
-        return ['deleted' => (bool)$ok];
+        $request->validate(['path' => ['required', 'string']]);
+        $backupSetting = BackupSetting::firstOrFail();
+        $deletedOk = Storage::disk($backupSetting->disk)->delete($request->string('path'));
+        return ['deleted' => (bool)$deletedOk];
+    }
+    // حذف نسخة
+    // Laravel 12 — نظيف وبسيط، مع تعليقات توضيحية
+    public function delete_all()
+    {
+        // اسم التطبيق لاستخدامه في المسار القياسي Backups/{APP_NAME}/...
+        $appName = config('app.name', 'laravel');
+        $safeApp = preg_replace('/[^a-z0-9\-_]+/i', '-', $appName);
+
+        // اجلب كل الأقراص المستخدمة في الإعدادات (قد يكون عندك أكثر من قرص)
+        $disks = \App\Models\BackupSetting::query()
+            ->pluck('disk')
+            ->unique()
+            ->filter()
+            ->values();
+
+        $totalDeleted = 0;
+        $errors = [];
+
+        foreach ($disks as $disk) {
+            $diskFs = \Illuminate\Support\Facades\Storage::disk($disk);
+            $prefix = "Backups/{$safeApp}";
+
+            // لو المجلد غير موجود على هذا القرص، انتقل للي بعده
+            if (!$diskFs->exists($prefix)) {
+                continue;
+            }
+
+            // 1) احذف كل الملفات تحت Backups/{APP_NAME}/...
+            $files = $diskFs->allFiles($prefix);
+            foreach ($files as $path) {
+                try {
+                    if ($diskFs->delete($path)) {
+                        $totalDeleted++;
+                    } else {
+                        $errors[] = "{$disk}: failed to delete file {$path}";
+                    }
+                } catch (\Throwable $e) {
+                    $errors[] = "{$disk}: exception deleting {$path} -> " . $e->getMessage();
+                }
+            }
+
+            // 2) احذف المجلدات (ابدأ بالأعمق لتفادي فشل الحذف)
+            $dirs = $diskFs->allDirectories($prefix);
+            foreach (array_reverse($dirs) as $dir) {
+                try {
+                    $diskFs->deleteDirectory($dir);
+                } catch (\Throwable $e) {
+                    $errors[] = "{$disk}: exception deleting dir {$dir} -> " . $e->getMessage();
+                }
+            }
+
+            // 3) أخيرًا احذف الجذر Backups/{APP_NAME} إن بقي موجودًا (قد تبقى ملفات مخفية أحيانًا)
+            try {
+                if ($diskFs->exists($prefix)) {
+                    $diskFs->deleteDirectory($prefix);
+                }
+            } catch (\Throwable $e) {
+                $errors[] = "{$disk}: exception deleting root {$prefix} -> " . $e->getMessage();
+            }
+        }
+
+        // 4) امسح سجلات النسخ (اختياري: لو تريد الاحتفاظ بها لا تمسح)
+        try {
+            \App\Models\BackupLog::truncate();
+        } catch (\Throwable $e) {
+            $errors[] = "db: failed to truncate backup_logs -> " . $e->getMessage();
+        }
+
+        return response()->json([
+            'deleted_files' => $totalDeleted,
+            'errors' => $errors,
+        ]);
+    }
+    public function deleteAllByLogs()
+    {
+        $logs = \App\Models\BackupLog::query()->get();
+
+        $deleted = 0;
+        $errors = [];
+
+        foreach ($logs as $log) {
+            $disk = $log->storage_disk ?? 'local';
+            $fs = \Illuminate\Support\Facades\Storage::disk($disk);
+            $paths = (array) ($log->backup_paths ?? []);
+
+            foreach ($paths as $p) {
+                try {
+                    if ($p && $fs->exists($p) && $fs->delete($p)) {
+                        $deleted++;
+                    }
+                } catch (\Throwable $e) {
+                    $errors[] = "{$disk}: {$p} -> " . $e->getMessage();
+                }
+            }
+        }
+
+        // ثم امسح السجلات
+        \App\Models\BackupLog::truncate();
+
+        return ['deleted_files' => $deleted, 'errors' => $errors];
     }
 
     // رابط مؤقت (Proxy بسيط موقّع)
-    public function tempLink(Request $r)
+    public function tempLink(Request $request)
     {
-        $r->validate(['path' => ['required','string']]);
-        $s = BackupSetting::firstOrFail();
+        $request->validate(['path' => ['required', 'string']]);
+        $backupSetting = BackupSetting::firstOrFail();
+
+        // تشفير المسار Base64 URL-safe
+        $encode = fn(string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
 
         // ننشئ URL موقّع إلى مسار تحميل داخلي
-        $minutes = max(5, (int) $s->temp_link_expiry);
+        $minutes = max(5, (int) $backupSetting->temp_link_expiry);
         $signed = url()->temporarySignedRoute(
             'backup.download',
             now()->addMinutes($minutes),
-            ['disk' => $s->disk, 'path' => $r->string('path')]
+            ['disk' => $backupSetting->disk, 'p' => $encode($request->string('path'))]
         );
 
         return ['url' => $signed, 'expires_in_minutes' => $minutes];
     }
 
-    // استعادة
-    public function restore(BackupRestoreRequest $req)
+    // اختبار إرسال البريد الإلكتروني
+    public function testEmail(Request $request)
     {
-        // سنضيف Skeleton خدمة الاستعادة الآن، والتفاصيل التنفيذية لاحقًا
-        // نتأكد من Maintenance Mode + تحقق checksum قبل التنفيذ
-        return ['status' => 'scheduled', 'at' => now()];
+        $request->validate([
+            'email' => ['required', 'email'],
+            'event' => ['nullable', 'in:success,failure'],
+        ]);
+
+        $email = $request->input('email');
+        $event = $request->input('event', 'success');
+
+        // بيانات تجريبية
+        $payload = [
+            'event' => 'backup.' . $event,
+            'timestamp' => now()->toIso8601String(),
+            'type' => 'db+files',
+            'paths' => [
+                'Backups/laravel/db/mysql/2025-01-28_123456.zip',
+                'Backups/laravel/files/public/2025-01-28_123456.zip',
+            ],
+            'temp_urls' => [
+                'Backups/laravel/db/mysql/2025-01-28_123456.zip' => url('/download/test1'),
+                'Backups/laravel/files/public/2025-01-28_123456.zip' => url('/download/test2'),
+            ],
+            'size' => 15728640, // 15 MB
+            'message' => $event === 'success'
+                ? 'Backup completed successfully.'
+                : 'Backup failed due to insufficient disk space.',
+            'checksums' => [
+                'Backups/laravel/db/mysql/2025-01-28_123456.zip' => 'abc123def456...',
+                'Backups/laravel/files/public/2025-01-28_123456.zip' => 'xyz789uvw012...',
+            ],
+        ];
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($email)->send(
+                new \App\Mail\BackupNotificationMail(
+                    payload: $payload,
+                    event: $event,
+                    attachmentData: [] // بدون مرفقات للتجربة
+                )
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Test email sent successfully',
+                'sent_to' => $email,
+                'event' => $event,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // معاينة البريد الإلكتروني في المتصفح
+    public function previewEmail(Request $request)
+    {
+        $event = $request->input('event', 'success');
+
+        // بيانات تجريبية
+        $payload = [
+            'event' => 'backup.' . $event,
+            'timestamp' => now()->toIso8601String(),
+            'type' => 'db+files',
+            'paths' => [
+                'Backups/laravel/db/mysql/2025-01-28_123456.zip',
+                'Backups/laravel/files/public/2025-01-28_123456.zip',
+            ],
+            'temp_urls' => [
+                'Backups/laravel/db/mysql/2025-01-28_123456.zip' => url('/download/test1'),
+                'Backups/laravel/files/public/2025-01-28_123456.zip' => url('/download/test2'),
+            ],
+            'size' => 15728640, // 15 MB
+            'message' => $event === 'success'
+                ? 'Backup completed successfully.'
+                : 'Backup failed due to insufficient disk space.',
+            'checksums' => [
+                'Backups/laravel/db/mysql/2025-01-28_123456.zip' => 'abc123def456789012345678901234567890',
+                'Backups/laravel/files/public/2025-01-28_123456.zip' => 'xyz789uvw012345678901234567890123456',
+            ],
+        ];
+
+        return view('emails.backup-notification', [
+            'payload' => $payload,
+            'event' => $event,
+            'isSuccess' => $event === 'success',
+        ]);
+    }
+
+    // استعادة
+    public function restore(BackupRestoreRequest $request)
+    {
+        $backupLogId = $request->integer('backup_log_id');
+        $restoreDatabase = $request->boolean('restore_database', true);
+        $restoreFiles = $request->boolean('restore_files', true);
+        $verifyChecksum = $request->boolean('verify_checksum', true);
+
+        // التحقق من وجود النسخة الاحتياطية
+        $log = \App\Models\BackupLog::findOrFail($backupLogId);
+
+        if ($log->status !== 'success') {
+            return response()->json([
+                'error' => 'Cannot restore from a failed backup'
+            ], 400);
+        }
+
+        // تشغيل عملية الاستعادة
+        try {
+            dispatch_sync(new \App\Jobs\RestoreBackupJob(
+                $backupLogId,
+                $restoreDatabase,
+                $restoreFiles,
+                $verifyChecksum
+            ));
+
+            return response()->json([
+                'status' => 'completed',
+                'message' => 'Backup restored successfully',
+                'backup_log_id' => $backupLogId,
+                'restored_at' => now()
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Restore failed', [
+                'backup_log_id' => $backupLogId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -103,7 +103,7 @@ class OutputVoucherController extends Controller
                 request: $request,
                 documentable_id: $data->id,
                 documentable_type: OutputVoucher::class,
-                pathFolder: OutputVoucher::class
+                pathFolder: "OutputVoucher"
             );
         }
         $arrayItems = json_decode($request->Items, true);
@@ -174,7 +174,7 @@ class OutputVoucherController extends Controller
                 request: $request,
                 documentable_id: $outputVoucher->id,
                 documentable_type: OutputVoucher::class,
-                pathFolder: OutputVoucher::class
+                pathFolder: "OutputVoucher"
             );
         }
         $outputVoucher->save();

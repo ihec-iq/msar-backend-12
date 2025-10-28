@@ -101,7 +101,7 @@ class InputVoucherController extends Controller
                 request: $request,
                 documentable_id: $data->id,
                 documentable_type: InputVoucher::class,
-                pathFolder: InputVoucher::class
+                pathFolder: "InputVoucher"
             );
         }
         foreach ($arrayItems as $key => $item) {
@@ -158,7 +158,7 @@ class InputVoucherController extends Controller
                 request: $request,
                 documentable_id: $inputVoucher->id,
                 documentable_type: InputVoucher::class,
-                pathFolder: InputVoucher::class
+                pathFolder: "InputVoucher"
             );
         }
         foreach ($arrayItems as $key => $item) {

@@ -15,8 +15,14 @@ Route::prefix('backup')->group(function () {
     Route::post('run', [BackupController::class, 'runNow']);
     Route::get('list', [BackupController::class, 'list']);             // قائمة النسخ من القرص
     Route::delete('delete', [BackupController::class, 'delete']);      // ?path=...
+    Route::delete('delete_all', [BackupController::class, 'delete_all']);      // حذف جميع النسخ
+    Route::delete('deleteAllByLogs', [BackupController::class, 'deleteAllByLogs']);       
     Route::post('temp-link', [BackupController::class, 'tempLink']);   // {path} → رابط مؤقت
     Route::post('restore', [BackupController::class, 'restore']);      // استعادة DB/Files
+
+    // اختبار البريد الإلكتروني
+    Route::post('test-email', [BackupController::class, 'testEmail']); // إرسال email تجريبي
+    Route::get('preview-email', [BackupController::class, 'previewEmail']); // معاينة Email في المتصفح
 });
 
 // فحص الحالة

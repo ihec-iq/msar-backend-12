@@ -13,13 +13,17 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class RunBackupJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public string $triggerType = 'manual') {}
+    public function __construct(
+        public string $triggerType = 'manual',
+        public ?string $backupType = null
+    ) {}
 
     public function handle(): void
     {
@@ -28,76 +32,153 @@ class RunBackupJob implements ShouldQueue
 
         BackupConfigurator::apply($settings);
 
-        $disk  = $settings->disk;
-        $now   = now()->setTimezone($settings->timezone ?? 'Asia/Baghdad');
-        $app   = config('app.name', 'laravel');
+        $storageDisk = $settings->disk;
+        $currentTime = now()->setTimezone($settings->timezone ?? 'Asia/Baghdad');
+        $appName = config('app.name', 'laravel');
 
-        $log = BackupLog::create([
+        // تحديد نوع النسخ الاحتياطي
+        // إذا لم يتم تمرير backupType، نأخذ من الإعدادات
+        $includeFiles = $this->determineIncludeFiles($settings);
+
+        $backupLog = BackupLog::create([
             'type'               => $this->triggerType === 'manual' ? 'manual' : 'auto',
-            'include_files'      => (bool)$settings->include_files,
+            'include_files'      => $includeFiles,
             'databases'          => ($settings->multi_db ? ($settings->selected_databases ?? []) : ['mysql']),
-            'files'              => $settings->include_files ? [storage_path('app/public')] : [],
+            'files'              => $includeFiles ? [storage_path('app/public')] : [],
             'status'             => 'running',
-            'storage_disk'       => $disk,
-            'started_at'         => $now,
+            'storage_disk'       => $storageDisk,
+            'started_at'         => $currentTime,
             'backup_setting_id'  => $settings->id,
         ]);
 
-        $before     = StorageManager::listZipFiles($disk);
         $totalSize  = 0;
         $checksums  = [];
         $finalPaths = [];
+        $fileSystem = Storage::disk($storageDisk);
 
         try {
-            // ===== (1) قواعد البيانات =====
-            $dbList = $settings->multi_db ? ($settings->selected_databases ?? []) : ['mysql'];
-            $dbList = array_values(array_unique(array_filter($dbList)));
+            // ===== (1) نسخ قاعدة البيانات (إلا إذا كان النوع 'files' فقط) =====
+            $shouldBackupDatabase = $this->backupType !== 'files';
 
-            foreach ($dbList as $db) {
-                // DB فقط
-                Config::set('backup.backup.source.databases', [$db]);
-                Config::set('backup.backup.source.files.include', []);
-                Config::set('backup.backup.source.files.exclude', []);
-                Artisan::call('backup:run', ['--only-db' => true, '--no-interaction' => true]);
+            if ($shouldBackupDatabase) {
+                $databaseList = $settings->multi_db ? ($settings->selected_databases ?? []) : ['mysql'];
+                $databaseList = array_values(array_unique(array_filter($databaseList)));
 
-                $new = array_diff(StorageManager::listZipFiles($disk), $before);
-                $before = StorageManager::listZipFiles($disk);
+                foreach ($databaseList as $database) {
+                $filesBeforeBackup = collect($fileSystem->allFiles())
+                    ->filter(fn($file) => str_ends_with(strtolower($file), '.zip'))
+                    ->all();
 
-                foreach ($new as $orig) {
-                    $dest = StorageManager::buildPath($app, 'db', $db, $now); // backup_db_{db}_...
-                    StorageManager::move($disk, $orig, $dest);
-                    $meta = StorageManager::meta($disk, $dest);
-                    $totalSize += $meta['size'];
-                    $checksums[$dest] = $meta['checksum'];
-                    $finalPaths[] = $dest;
+                Config::set('backup.backup.source.databases', [$database]);
+                Config::set('backup.backup.source.files', [
+                    'include' => [],
+                    'exclude' => [],
+                    'follow_links' => false,
+                    'ignore_unreadable_directories' => false,
+                    'relative_path' => base_path(),
+                ]);
+                Artisan::call('backup:run', ['--only-db' => true, '--disable-notifications' => true, '--no-interaction' => true]);
+
+                $filesAfterBackup = collect($fileSystem->allFiles())
+                    ->filter(fn($file) => str_ends_with(strtolower($file), '.zip'))
+                    ->all();
+
+                $newFiles = array_diff($filesAfterBackup, $filesBeforeBackup);
+
+                foreach ($newFiles as $originalPath) {
+                    if (!$fileSystem->exists($originalPath)) {
+                        continue;
+                    }
+
+                    $destinationPath = StorageManager::buildPath($appName, 'db', $database, $currentTime);
+                    StorageManager::move($storageDisk, $originalPath, $destinationPath);
+                    $metadata = StorageManager::meta($storageDisk, $destinationPath);
+                    $totalSize += $metadata['size'];
+                    $checksums[$destinationPath] = $metadata['checksum'];
+                    $finalPaths[] = $destinationPath;
                 }
             }
+            } // نهاية شرط shouldBackupDatabase
 
             // ===== (2) ملفات storage/app/public فقط =====
-            if ($settings->include_files) {
-                Config::set('backup.backup.source.files.include', [storage_path('app/public')]);
-                Config::set('backup.backup.source.files.exclude', []);
-                Config::set('backup.backup.source.databases', []); // لا نضمّن DB داخل هذا الأرشيف
-                Artisan::call('backup:run', ['--only-files' => true, '--no-interaction' => true]);
+            if ($includeFiles) {
 
-                $new = array_diff(StorageManager::listZipFiles($disk), $before);
-                $before = StorageManager::listZipFiles($disk);
+                // طبّق مسار آمن موجود فعليًا
+                $publicDir = storage_path('app/public');
 
-                foreach ($new as $orig) {
-                    $dest = StorageManager::buildPath($app, 'files', 'public', $now); // backup_files_public_...
-                    StorageManager::move($disk, $orig, $dest);
-                    $meta = StorageManager::meta($disk, $dest);
-                    $totalSize += $meta['size'];
-                    $checksums[$dest] = $meta['checksum'];
-                    $finalPaths[] = $dest;
+                // لو المجلد غير موجود أنشئه (أو تجاوز خطوة الملفات)
+                if (!is_dir($publicDir)) {
+                    @mkdir($publicDir, 0775, true);
+                }
+
+                // تحقق سريع: لو فارغ بالكامل، تجاوز خطوة الملفات بدل ما نرمي استثناء
+                $hasAnyFile = false;
+                if (is_dir($publicDir)) {
+                    $iter = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($publicDir, \FilesystemIterator::SKIP_DOTS));
+                    foreach ($iter as $f) {
+                        $hasAnyFile = true;
+                        break;
+                    }
+                }
+                if (!$hasAnyFile) {
+                    // لا توجد ملفات — فقط تجاوز هذه المرحلة بدون فشل
+                    // يمكنك كتابة log ميسر هنا إن رغبت
+                } else {
+                    $filesBeforeBackup = collect($fileSystem->allFiles())
+                        ->filter(fn($file) => str_ends_with(strtolower($file), '.zip'))
+                        ->all();
+
+                    // مهم: لا نكتب مصفوفة files بالكامل — نضبط المفاتيح مباشرة
+                    Config::set('backup.backup.source.databases', []);                          // حتى ما يدخل DB داخل هذا الأرشيف
+                    Config::set('backup.backup.source.files.include', [$publicDir]);
+                    Config::set('backup.backup.source.files.exclude', []);
+                    Config::set('backup.backup.source.files.follow_links', false);
+                    Config::set('backup.backup.source.files.ignore_unreadable_directories', false);
+
+                    // (اختياري وآمن) اضبط relative_path على base_path() بدل null
+                    Config::set('backup.backup.source.files.relative_path', base_path());
+
+                    Artisan::call('backup:run', [
+                        '--only-files' => true,
+                        '--disable-notifications' => true,
+                        '--no-interaction' => true,
+                    ]);
+
+                    $filesAfterBackup = collect($fileSystem->allFiles())
+                        ->filter(fn($file) => str_ends_with(strtolower($file), '.zip'))
+                        ->all();
+
+                    $newFiles = array_diff($filesAfterBackup, $filesBeforeBackup);
+
+                    $fileCount = 0;
+                    foreach ($newFiles as $originalPath) {
+                        if (!$fileSystem->exists($originalPath)) continue;
+
+                        $fileSize = $fileSystem->size($originalPath);
+                        if ($fileSize < 500000) { // تجاهل نتف صغيرة
+                            $fileSystem->delete($originalPath);
+                            continue;
+                        }
+
+                        $destinationPath = \App\Support\StorageManager::buildPath($appName, 'files', 'public', $currentTime);
+                        if ($fileCount > 0) {
+                            $destinationPath = str_replace('.zip', "_part{$fileCount}.zip", $destinationPath);
+                        }
+
+                        \App\Support\StorageManager::move($storageDisk, $originalPath, $destinationPath);
+                        $meta = \App\Support\StorageManager::meta($storageDisk, $destinationPath);
+                        $totalSize += $meta['size'];
+                        $checksums[$destinationPath] = $meta['checksum'];
+                        $finalPaths[] = $destinationPath;
+                        $fileCount++;
+                    }
                 }
             }
 
-            // تنظيف وفق استراتيجية Spatie
+
             Artisan::call('backup:clean');
 
-            // تحديث السجل نجاح + إشعار
-            $log->update([
+            $backupLog->update([
                 'status'       => 'success',
                 'backup_paths' => $finalPaths,
                 'checksums'    => $checksums,
@@ -106,22 +187,39 @@ class RunBackupJob implements ShouldQueue
                 'message'      => 'Backup completed successfully.',
             ]);
 
-            \App\Support\NotificationManager::notify($log); // ✅ إشعار بعد النجاح
+            \App\Support\NotificationManager::notify($backupLog);
 
-            // أحدث وقت تشغيل
             $settings->forceFill(['last_run_at' => now()])->save();
-
-        } catch (Throwable $e) {
-            // تحديث السجل فشل + إشعار
-            $log->update([
+        } catch (Throwable $exception) {
+            $backupLog->update([
                 'status'      => 'failed',
                 'finished_at' => now(),
-                'message'     => $e->getMessage(),
+                'message'     => $exception->getMessage(),
             ]);
 
-            \App\Support\NotificationManager::notify($log); // ✅ إشعار عند الفشل
+            \App\Support\NotificationManager::notify($backupLog);
 
-            throw $e;
+            throw $exception;
         }
+    }
+
+    /**
+     * تحديد ما إذا كان يجب تضمين الملفات في النسخ الاحتياطي
+     * بناءً على البارامتر المُمرّر أو الإعدادات الافتراضية
+     */
+    private function determineIncludeFiles(BackupSetting $settings): bool
+    {
+        // إذا تم تمرير backupType، نستخدمه
+        if ($this->backupType !== null) {
+            return match ($this->backupType) {
+                'db' => false,           // قاعدة البيانات فقط
+                'files' => true,         // الملفات فقط (سيتم تخطي DB في المنطق)
+                'both' => true,          // كلاهما
+                default => (bool)$settings->include_files,
+            };
+        }
+
+        // إذا لم يتم تمرير backupType، نأخذ من الإعدادات
+        return (bool)$settings->include_files;
     }
 }
