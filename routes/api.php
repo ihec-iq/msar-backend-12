@@ -38,10 +38,3 @@ Route::get('/setBotWebhook/{site}', function ($site) {
     $reposnse = Http::get($url);
     return response()->json($reposnse->json());
 });
-
-// Route::post('/backup/run', function () {
-//     $s = BackupSetting::first();
-//     abort_unless($s && $s->enabled, 400, 'Backup disabled.');
-//     dispatch_sync(new RunBackupJob('manual')); // فوري للـ response
-//     return response()->json(['status' => 'ok', 'ran_at' => now()]);
-// });

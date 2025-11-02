@@ -129,6 +129,16 @@ class PermissionSeeder extends Seeder
             ['name' => 'edit employee setting', 'name_ar' => 'تعديل إعداد الموظف'],
             ['name' => 'delete employee setting', 'name_ar' => 'حذف إعداد الموظف'],
             ['name' => 'show employee setting', 'name_ar' => 'عرض إعداد الموظف'],
+            // Backup Management
+            ['name' => 'show backups', 'name_ar' => 'عرض النسخ الاحتياطية'],
+            ['name' => 'create backup', 'name_ar' => 'إنشاء نسخة احتياطية'],
+            ['name' => 'delete backup', 'name_ar' => 'حذف نسخة احتياطية'],
+            ['name' => 'restore backup', 'name_ar' => 'استعادة نسخة احتياطية'],
+            ['name' => 'download backup', 'name_ar' => 'تحميل نسخة احتياطية'],
+            ['name' => 'manage backup settings', 'name_ar' => 'إدارة إعدادات النسخ الاحتياطية'],
+            ['name' => 'manage backup admins', 'name_ar' => 'إدارة مسؤولي النسخ الاحتياطية'],
+            ['name' => 'show backup logs', 'name_ar' => 'عرض سجلات النسخ الاحتياطية'],
+            ['name' => 'show backup health', 'name_ar' => 'عرض حالة النسخ الاحتياطية'],
         ];
 
         foreach ($permissions as $permission) {

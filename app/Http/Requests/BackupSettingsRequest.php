@@ -44,6 +44,12 @@ class BackupSettingsRequest extends FormRequest
             // الإشعارات
             'notify_enabled' => ['boolean'],
             'notify_on' => ['in:success,failure,both'],
+
+            // تفعيل/تعطيل قنوات الإشعار
+            'telegram_enabled' => ['boolean'],
+            'email_enabled' => ['boolean'],
+            'webhook_enabled' => ['boolean'],
+
             'emails' => ['nullable','string'], // نفصّلها بفارزة في السيرفر
             'telegram_bot_token' => ['nullable','string'],
             'telegram_chat_ids' => ['nullable','string'], // عدة IDs مفصولة بفارزة

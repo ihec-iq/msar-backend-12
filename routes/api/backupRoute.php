@@ -14,9 +14,10 @@ Route::prefix('backup')->group(function () {
     // تشغيل يدوي + قائمة + حذف + رابط تحميل مؤقت + استعادة
     Route::post('run', [BackupController::class, 'runNow']);
     Route::get('list', [BackupController::class, 'list']);             // قائمة النسخ من القرص
+    Route::get('logs', [BackupController::class, 'logs']);             // سجلات النسخ الاحتياطي
     Route::delete('delete', [BackupController::class, 'delete']);      // ?path=...
     Route::delete('delete_all', [BackupController::class, 'delete_all']);      // حذف جميع النسخ
-    Route::delete('deleteAllByLogs', [BackupController::class, 'deleteAllByLogs']);       
+    Route::delete('deleteAllByLogs', [BackupController::class, 'deleteAllByLogs']); // حذف حسب السجلات
     Route::post('temp-link', [BackupController::class, 'tempLink']);   // {path} → رابط مؤقت
     Route::post('restore', [BackupController::class, 'restore']);      // استعادة DB/Files
 

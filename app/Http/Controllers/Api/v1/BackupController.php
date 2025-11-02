@@ -279,6 +279,30 @@ class BackupController extends Controller
         ]);
     }
 
+    // جلب سجلات النسخ الاحتياطي (backup logs)
+    public function logs(Request $request)
+    {
+        $perPage = $request->integer('per_page', 15);
+
+        $query = \App\Models\BackupLog::query()
+            ->orderBy('created_at', 'desc');
+
+        // فلترة حسب النوع
+        if ($request->filled('type')) {
+            $query->where('type', $request->string('type'));
+        }
+
+        // فلترة حسب الحالة
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        $logs = $query->paginate($perPage);
+
+        // استخدام Resource لتنسيق البيانات
+        return \App\Http\Resources\BackupLogResource::collection($logs);
+    }
+
     // استعادة
     public function restore(BackupRestoreRequest $request)
     {

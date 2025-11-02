@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->json('files')->nullable();     // قائمة الملفات أو المجلدات
 
             // حالة العملية
-            $table->enum('status', ['running', 'success', 'failed'])->default('running');
+            $table->enum('status', ['running', 'success', 'failed' , 'pending'])->default('running');
             $table->text('message')->nullable(); // في حال وجود خطأ أو ملاحظة
 
             // نتائج النسخ

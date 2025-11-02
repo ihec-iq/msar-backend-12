@@ -29,9 +29,12 @@ class NotificationManager
      */
     public static function notify(\App\Models\BackupLog $log): void
     {
+        \Log::info('NotificationManager::notify called', ['log_id' => $log->id, 'status' => $log->status]);
+
         // تحميل الإعدادات العامة
         $settings = \App\Models\BackupSetting::first();
         if (!$settings || !$settings->notify_enabled) {
+            \Log::info('Notifications disabled or settings not found');
             return;
         }
 
@@ -44,6 +47,8 @@ class NotificationManager
         $admins   = \App\Models\BackupAdmin::where('active', true)->get();
         $emails   = $admins->filter(fn($a) => in_array('email', (array)$a->notify_via) && $a->email)->pluck('email')->all();
         $chatIds  = $admins->filter(fn($a) => in_array('telegram', (array)$a->notify_via) && $a->telegram_id)->pluck('telegram_id')->all();
+
+        \Log::info('Notification recipients', ['emails' => $emails, 'chat_ids' => $chatIds]);
 
         // إن لم يوجد أحد لاستلام الإشعار، لا نكمل
         if (empty($emails) && empty($chatIds) && empty($settings->webhook_urls)) {
@@ -86,7 +91,7 @@ class NotificationManager
         // ===========================
         // 1) Telegram
         // ===========================
-        if (!empty($chatIds) && !empty($settings->telegram_bot_token)) {
+        if ($settings->telegram_enabled && !empty($chatIds) && !empty($settings->telegram_bot_token)) {
             $token = trim($settings->telegram_bot_token);
 
             // نص مختصر (HTML-safe) للرسالة الأولى
@@ -114,41 +119,66 @@ class NotificationManager
                     ]);
 
                     // إرسال الملفات
+                    \Log::info('Telegram: Starting to send files', ['total_files' => count($paths)]);
+
                     foreach ($paths as $p) {
                         try {
                             $fs = Storage::disk($disk);
                             if (!$fs->exists($p)) {
+                                \Log::warning('Telegram: File not found', ['path' => $p]);
                                 continue;
                             }
 
                             $size = $fs->size($p);
                             $fileName = basename($p);
 
+                            \Log::info('Telegram: Sending file', [
+                                'path' => $p,
+                                'size' => $size,
+                                'size_mb' => round($size / (1024 * 1024), 2),
+                                'limit_mb' => round($attachmentLimit / (1024 * 1024), 2)
+                            ]);
+
+                            // تنسيق حجم الملف (KB/MB/GB)
+                            $formattedSize = self::formatFileSize($size);
+
                             // للملفات الصغيرة (<= 25MB)، نرسلها مباشرة
                             if ($size <= $attachmentLimit) {
                                 $fileContent = $fs->get($p);
-                                $sizeKB = round($size / 1024, 2);
 
-                                Http::attach(
+                                $response = Http::attach(
                                     'document',
                                     $fileContent,
                                     $fileName
                                 )->post("https://api.telegram.org/bot{$token}/sendDocument", [
                                     'chat_id' => $chatId,
-                                    'caption' => "📦 {$fileName}\nSize: {$sizeKB} KB",
+                                    'caption' => "📦 {$fileName}\nSize: {$formattedSize}",
+                                ]);
+
+                                \Log::info('Telegram: File sent', [
+                                    'file' => $fileName,
+                                    'status' => $response->status(),
+                                    'success' => $response->successful()
                                 ]);
                             } else {
                                 // للملفات الكبيرة، نرسل رابط التحميل
                                 if (isset($tempUrls[$p])) {
-                                    $sizeMB = round($size / (1024 * 1024), 2);
-                                    Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+                                    $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
                                         'chat_id' => $chatId,
-                                        'text'    => "📦 Large file ({$sizeMB} MB)\n\nDownload: {$tempUrls[$p]}",
+                                        'text'    => "📦 Large file ({$formattedSize})\n\nDownload: {$tempUrls[$p]}",
+                                    ]);
+
+                                    \Log::info('Telegram: Large file link sent', [
+                                        'file' => $fileName,
+                                        'status' => $response->status()
                                     ]);
                                 }
                             }
                         } catch (\Throwable $e) {
-                            // تجاهل أخطاء الملفات الفردية واستمر
+                            \Log::error('Telegram: Failed to send file', [
+                                'path' => $p,
+                                'error' => $e->getMessage()
+                            ]);
                         }
                     }
                 } catch (\Throwable $e) {
@@ -161,7 +191,7 @@ class NotificationManager
         // ===========================
         // 2) Email
         // ===========================
-        if (!empty($emails)) {
+        if ($settings->email_enabled && !empty($emails)) {
             // جهّز مرفقات صغيرة فقط
             $attachments = [];
             foreach ($paths as $p) {
@@ -194,7 +224,7 @@ class NotificationManager
         // ===========================
         // 3) Webhook
         // ===========================
-        if (!empty($settings->webhook_urls)) {
+        if ($settings->webhook_enabled && !empty($settings->webhook_urls)) {
             $urls = collect(explode(',', $settings->webhook_urls))
                 ->map(fn($u) => trim($u))
                 ->filter()
@@ -251,5 +281,23 @@ class NotificationManager
             return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE);
         }
         return $text;
+    }
+
+    /**
+     * تنسيق حجم الملف بشكل مقروء (Bytes/KB/MB/GB)
+     *
+     * @param int $bytes حجم الملف بالبايت
+     * @param int $precision دقة الأرقام العشرية
+     * @return string الحجم المنسق
+     */
+    private static function formatFileSize(int $bytes, int $precision = 2): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+            $bytes /= 1024;
+        }
+
+        return round($bytes, $precision) . ' ' . $units[$i];
     }
 }
