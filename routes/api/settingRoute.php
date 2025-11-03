@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\v1\SettingController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('/setting')->middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('/setting')->group(function () {
     Route::get('/', [SettingController::class, 'index']);
     Route::get('/{setting}', [SettingController::class, 'show']);
     Route::get('/show/key', [SettingController::class, 'showByKey']);

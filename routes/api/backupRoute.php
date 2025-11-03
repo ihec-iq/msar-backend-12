@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\v1\BackupHealthController;
 use App\Http\Controllers\Api\v1\BackupSettingsController;
 use Illuminate\Support\Facades\Route;
 // مبدئيًا بدون Sanctum، لاحقًا تضيف ->middleware('auth:sanctum')
-Route::prefix('backup')->group(function () {
+Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('backup')->group(function () {
     // الإعدادات
     Route::get('settings', [BackupSettingsController::class, 'show']);
     Route::put('settings', [BackupSettingsController::class, 'update']);
