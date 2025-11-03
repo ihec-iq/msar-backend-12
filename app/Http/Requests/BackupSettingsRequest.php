@@ -8,6 +8,56 @@ class BackupSettingsRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
+    /**
+     * تحويل القيم النصية 'true'/'false' إلى boolean قبل الـ validation
+     * هذا يحل مشكلة إرسال الـ Frontend للقيم البوليانية كـ strings
+     */
+    protected function prepareForValidation(): void
+    {
+        $booleanFields = [
+            'enabled',
+            'include_files',
+            'multi_db',
+            'checksum_enabled',
+            'notify_enabled',
+            'telegram_enabled',
+            'email_enabled',
+            'webhook_enabled',
+        ];
+
+        $data = [];
+        foreach ($booleanFields as $field) {
+            if ($this->has($field)) {
+                $value = $this->input($field);
+                // تحويل 'true'/'false' strings إلى boolean
+                if ($value === 'true' || $value === '1' || $value === 1 || $value === true) {
+                    $data[$field] = true;
+                } elseif ($value === 'false' || $value === '0' || $value === 0 || $value === false) {
+                    $data[$field] = false;
+                }
+            }
+        }
+
+        // تحويل الحقول الرقمية من string إلى integer
+        $integerFields = [
+            'max_storage_mb',
+            'keep_daily_days',
+            'keep_weekly_weeks',
+            'keep_monthly_months',
+            'keep_yearly_years',
+            'temp_link_expiry',
+            'stale_hours',
+        ];
+
+        foreach ($integerFields as $field) {
+            if ($this->has($field) && is_string($this->input($field))) {
+                $data[$field] = (int) $this->input($field);
+            }
+        }
+
+        $this->merge($data);
+    }
+
     public function rules(): array
     {
         return [

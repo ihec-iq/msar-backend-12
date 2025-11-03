@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BackupSettingsRequest;
 use App\Models\BackupSetting;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class BackupSettingsController extends Controller
 {

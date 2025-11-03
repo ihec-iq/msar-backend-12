@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('backup')->group(function () {
     // الإعدادات
     Route::get('settings', [BackupSettingsController::class, 'show']);
-    Route::put('settings', [BackupSettingsController::class, 'update']);
+    Route::post('settings', [BackupSettingsController::class, 'update']);
 
     // تشغيل يدوي + قائمة + حذف + رابط تحميل مؤقت + استعادة
     Route::post('run', [BackupController::class, 'runNow']);

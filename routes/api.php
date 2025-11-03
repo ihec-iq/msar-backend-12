@@ -36,13 +36,3 @@ Route::get('/setBotWebhook/{site}', function ($site) {
     $reposnse = Http::get($url);
     return response()->json($reposnse->json());
 });
-
-Route::middleware(['auth:sanctum', 'maintenance', 'locale']) // غيّر الميدل وير حسب مشروعك
-    ->prefix('logs')
-    ->group(function () {
-        Route::get('/',        [LogFileController::class, 'meta']);        // معلومات أساسية وحجم الملف
-        Route::get('/tail',    [LogFileController::class, 'tail']);        // آخر N أسطر لعرض سريع
-        Route::get('/download', [LogFileController::class, 'download']);    // تنزيل/فتح
-        Route::post('/upload', [LogFileController::class, 'upload']);      // رفع ملف log جديد (استبدال)
-        Route::delete('/',     [LogFileController::class, 'destroy']);     // حذف/تفريغ
-    });

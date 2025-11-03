@@ -95,9 +95,9 @@ class LogFileController extends  Controller
     /** تنزيل الملف (stream) — المتصفّح سيتعامل معه كنص */
     public function download(Request $request): StreamedResponse
     {
-        @set_time_limit(0);
-        @ini_set('output_buffering', 'off');
-        @ini_set('zlib.output_compression', '0');
+        // @set_time_limit(0);
+        // @ini_set('output_buffering', 'off');
+        // @ini_set('zlib.output_compression', '0');
         $path = $this->logPath();
 
         if (!file_exists($path)) {
