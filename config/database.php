@@ -62,12 +62,8 @@ return [
             ]) : [],
             // ✅ إعدادات Spatie DbDumper على ويندوز
             'dump' => [
-                'dump_binary_path' =>'',
-                // حسب ما اتفقنا: نسخة متّسقة بدون قفل
                 'use_single_transaction' => true,
-                // وقت التنفيذ الأقصى (ثواني)
                 'timeout' => 300,
-                // خيار إضافي آمن لمايSQL 8
                 'add_extra_option' => '--no-tablespaces',
             ],
         ],
