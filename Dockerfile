@@ -4,7 +4,7 @@ FROM php:8.2-fpm
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
-    mysql-client
+    default-mysql-client
 
 # تثبيت Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -12,8 +12,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # تحديد مجلد العمل
 WORKDIR /var/www
 
-# نسخ الملفات إلى الحاوية
+# نسخ كل ملفات المشروع
 COPY . .
 
-# تثبيت الاعتمادات
+# تثبيت الحزم
 RUN composer install --no-dev --optimize-autoloader
+
+# إعداد صلاحيات Laravel (اختياري)
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
