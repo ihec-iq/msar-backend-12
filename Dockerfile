@@ -1,10 +1,13 @@
 FROM php:8.2-fpm
 
-# تثبيت الأدوات المطلوبة
+# تثبيت أدوات النظام وامتدادات PHP المطلوبة
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
-    default-mysql-client
+    libzip-dev \
+    zip \
+    default-mysql-client \
+    && docker-php-ext-install zip
 
 # تثبيت Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
