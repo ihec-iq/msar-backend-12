@@ -1,3 +1,11 @@
-#!/bin/bash
-node /assets/scripts/prestart.mjs /assets/nginx.template.conf /etc/nginx.conf
-supervisord -c /etc/supervisord.conf -n
+ #!/bin/bash
+
+# نسخ ملف NGINX الجاهز
+cp /assets/nginx.template.conf /etc/nginx.conf
+
+# تشغيل PHP-FPM بالخلفية
+php-fpm -y /assets/php-fpm.conf -D
+
+# إبقاء NGINX في الواجهة
+nginx -g "daemon off;"
+
