@@ -1,0 +1,10 @@
+[phases.setup]
+nixPkgs = ["mysql80", "python311Packages.supervisor"]
+
+[phases.build]
+cmds = [
+  "chmod +x /assets/start.sh"
+]
+
+[start]
+cmd = "/assets/start.sh"
