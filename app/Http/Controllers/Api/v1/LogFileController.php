@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\File;
 
 class LogFileController extends  Controller
 {
@@ -142,9 +143,11 @@ class LogFileController extends  Controller
     {
         $path = $this->logPath();
 
-        // تفريغ فقط للحفاظ على الأذونات والمسار
-        @file_put_contents($path, '');
+        if (File::exists($path)) {
+            File::put($path, ''); // هذا يُفرغ الملف
+            return response()->json(['message' => 'Log file cleared.']);
+        }
 
-        return response()->json(['message' => 'Log file cleared.']);
+        return response()->json(['error' => 'Log file not found.'], 404);
     }
 }
