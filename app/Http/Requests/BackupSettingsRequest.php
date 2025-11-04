@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 
 class BackupSettingsRequest extends FormRequest
 {
@@ -14,6 +15,11 @@ class BackupSettingsRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        Log::info('prepareForValidation called', ['input_sample' => [
+            'enabled' => $this->input('enabled'),
+            'multi_db' => $this->input('multi_db'),
+        ]]);
+
         $booleanFields = [
             'enabled',
             'include_files',
