@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["mysql80", "python311Packages.supervisor"]
+nixPkgs = ["mysql80", "composer", "nodejs", "python311Packages.supervisor"]
 
 [phases.build]
 cmds = [
