@@ -7,7 +7,6 @@ nixPkgs = [
   "php82Extensions.zip",
   "mysql-client",
   "nodejs_20",
-  "npm",
   "python311Packages.supervisor"
 ]
 
