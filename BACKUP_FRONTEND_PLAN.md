@@ -915,13 +915,48 @@ VITE_APP_VERSION=1.0.0
 
 **تم إنشاء هذه الخطة في:** 2025-01-28
 
-**آخر تحديث:** 2025-11-02
+**آخر تحديث:** 2025-11-05
 
-**النسخة:** 1.1
+**النسخة:** 1.2
+
+---
+
+## 📖 ملفات مرجعية إضافية
+
+للحصول على توثيق شامل لـ APIs الخاصة بإدارة الأدمنز والإشعارات، راجع الملف:
+
+**[ADMINS_NOTIFICATIONS_API_DOCS.md](./ADMINS_NOTIFICATIONS_API_DOCS.md)**
+
+هذا الملف يحتوي على:
+- توثيق شامل لجميع API Endpoints
+- Data Structures كاملة
+- Validation Rules (Backend)
+- أمثلة Request/Response
+- شرح آلية جمع المستلمين من المصدرين
+- أمثلة عملية على جميع الحالات
+
+**ملاحظة:** التصميم والكود الخاص بالـ Frontend متروك لك بالكامل. هذا الملف يحتوي على توثيق Backend فقط.
 
 ---
 
 ## 📝 سجل التحديثات (Changelog)
+
+### النسخة 1.2 (2025-11-05)
+- **إضافة نظام إدارة الأدمنز الشامل:**
+  - جدول `backup_admins` لإدارة المستلمين
+  - دعم حقل `webhook_url` في جدول الأدمنز
+  - دعم **القيم المتعددة المفصولة بفاصلة** في جميع الحقول (email, telegram_id, webhook_url)
+  - مثال: `"admin1@test.com,admin2@test.com,admin3@test.com"`
+- **توحيد آلية الإشعارات:**
+  - جمع المستلمين من مصدرين: `backup_admins` + `backup_settings`
+  - إزالة التكرار تلقائياً
+  - إرسال منفصل لكل مستلم
+- **تحديث API endpoints:**
+  - `GET /api/v1/backup/admins` - جلب قائمة الأدمنز
+  - `POST /api/v1/backup/admins` - إضافة أدمن جديد
+  - `PUT /api/v1/backup/admins/{id}` - تعديل أدمن
+  - `DELETE /api/v1/backup/admins/{id}` - حذف أدمن
+- **إنشاء ملف توثيق منفصل:** `ADMINS_NOTIFICATIONS_API_DOCS.md` (توثيق Backend APIs فقط)
 
 ### النسخة 1.1 (2025-11-02)
 - إضافة متغيرات التحكم المستقل في قنوات الإشعارات:

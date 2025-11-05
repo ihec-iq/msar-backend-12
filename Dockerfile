@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y \
 # تثبيت Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# نسخ ملفات الـ nixpacks
+COPY .nixpacks/ .nixpacks/
+
 # تحديد مجلد العمل
 WORKDIR /var/www
 
