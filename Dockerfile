@@ -1,8 +1,10 @@
-# الصورة الأساسية
+# ===== Base Image =====
 FROM php:8.2-fpm
 
-# تثبيت الأدوات والمكتبات
-RUN apt-get update && apt-get install -y \
+# ===== OS deps (nginx + supervisor + tools) =====
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx \
+    supervisor \
     git \
     unzip \
     zip \
@@ -13,32 +15,34 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     default-mysql-client \
-    nodejs \
-    python3 \
-    python3-pip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install zip gd
+ && rm -rf /var/lib/apt/lists/*
 
-# تثبيت Composer
+# PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install zip gd
+
+# composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# نسخ ملفات المشروع بما فيها _nixpacks
+# ===== App files =====
+WORKDIR /var/www
 COPY . /var/www
 
-# تحديد مجلد العمل
-WORKDIR /var/www
+# انسخ مجلد إعداداتنا إلى جذر النظام حتى تبقى المسارات المتوقعة كما هي
+# (وبالتالي ما نغيّر أي شيء داخل ملفات الإعداد)
+RUN cp -r /var/www/_nixpacks /_nixpacks
 
-# إعداد Supervisor
-RUN mkdir -p /etc/supervisor/conf.d/ \
- && cp _nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
- && cp _nixpacks/supervisord.conf /etc/supervisord.conf \
- && chmod +x _nixpacks/start.sh
+# إعدادات supervisor
+RUN mkdir -p /etc/supervisor/conf.d \
+ && cp /_nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
+ && cp /_nixpacks/supervisord.conf /etc/supervisord.conf \
+ && chmod +x /_nixpacks/start.sh
 
-# تثبيت الحزم
+# Laravel deps (اختياري: إذا تحتاج dev packages شيل --no-dev)
 RUN composer install --no-dev --optimize-autoloader
 
-# إعداد صلاحيات Laravel (اختياري)
+# Permissions
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# أمر التشغيل
+# ===== Entrypoint =====
 CMD ["/_nixpacks/start.sh"]

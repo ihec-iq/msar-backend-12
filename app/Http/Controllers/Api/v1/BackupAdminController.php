@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BackupAdminRequest;
 use App\Models\BackupAdmin;
+use Illuminate\Support\Facades\Log;
 
 class BackupAdminController extends Controller
 {
@@ -21,6 +22,7 @@ class BackupAdminController extends Controller
 
     public function update(BackupAdminRequest $request, BackupAdmin $backupAdmin)
     {
+        Log::alert($request);
         $backupAdmin->update($request->validated());
         return $backupAdmin;
     }

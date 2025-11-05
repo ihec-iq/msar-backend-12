@@ -10,6 +10,15 @@ class BackupAdminRequest extends FormRequest
 
     public function rules(): array
     {
+        // Coerce 'active' (which may come as string) into a boolean before validation
+        if ($this->has('active')) {
+            $value = $this->input('active');
+            if (!is_bool($value)) {
+            // handles "true"/"false", "1"/"0", 1/0, "on"/"off", "yes"/"no"
+            $this->merge(['active' => filter_var($value, FILTER_VALIDATE_BOOLEAN)]);
+            }
+        }
+
         return [
             'name' => ['required','string','max:100'],
             // يدعم email واحد أو عدة emails مفصولة بفاصلة

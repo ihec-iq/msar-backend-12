@@ -35,6 +35,6 @@ Route::get('health/backup', [BackupHealthController::class, 'status']);
 Route::prefix('backup/admins')->group(function () {
     Route::get('/', [BackupAdminController::class, 'index']);
     Route::post('/', [BackupAdminController::class, 'store']);
-    Route::put('/{backupAdmin}', [BackupAdminController::class, 'update']);
+    Route::post('/{backupAdmin}', [BackupAdminController::class, 'update']);
     Route::delete('/{backupAdmin}', [BackupAdminController::class, 'destroy']);
 });
