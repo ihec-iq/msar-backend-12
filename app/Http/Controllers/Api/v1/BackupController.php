@@ -348,4 +348,238 @@ class BackupController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * اختبار إرسال رسالة Telegram
+     * يرسل رسالة اختبار لجميع الـ Chat IDs المسجلة في الإعدادات والأدمنز
+     */
+    public function testTelegram(Request $request)
+    {
+        $settings = BackupSetting::firstOrFail();
+
+        // التحقق من تفعيل Telegram
+        if (!$settings->telegram_enabled) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Telegram notifications are disabled in settings'
+            ], 400);
+        }
+
+        // التحقق من وجود Bot Token
+        if (empty($settings->telegram_bot_token)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Telegram bot token is not configured'
+            ], 400);
+        }
+
+        // جمع Chat IDs من المصدرين (admins + settings)
+        $admins = \App\Models\BackupAdmin::where('active', true)->get();
+
+        $adminChatIds = $admins
+            ->filter(fn($a) => in_array('telegram', (array)$a->notify_via) && $a->telegram_id)
+            ->flatMap(fn($a) => $this->splitByComma($a->telegram_id))
+            ->unique()
+            ->all();
+
+        $settingsChatIds = !empty($settings->telegram_chat_ids)
+            ? collect($this->splitByComma($settings->telegram_chat_ids))->unique()->all()
+            : [];
+
+        $chatIds = collect($adminChatIds)
+            ->merge($settingsChatIds)
+            ->unique()
+            ->filter()
+            ->all();
+
+        if (empty($chatIds)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No Telegram chat IDs found. Please add chat IDs in settings or admins.'
+            ], 400);
+        }
+
+        // إرسال رسالة اختبار
+        $token = trim($settings->telegram_bot_token);
+        $testMessage = "🧪 Test Message from " . config('app.name', 'Backup System') . "\n\n";
+        $testMessage .= "✅ Telegram notifications are working correctly!\n";
+        $testMessage .= "📅 Time: " . now()->toDateTimeString() . "\n";
+        $testMessage .= "🔔 This is a test notification.";
+
+        $results = [];
+        $successCount = 0;
+        $failureCount = 0;
+
+        foreach ($chatIds as $chatId) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::post(
+                    "https://api.telegram.org/bot{$token}/sendMessage",
+                    [
+                        'chat_id' => $chatId,
+                        'text' => $testMessage,
+                        'parse_mode' => 'HTML',
+                    ]
+                );
+
+                if ($response->successful()) {
+                    $successCount++;
+                    $results[] = [
+                        'chat_id' => $chatId,
+                        'status' => 'success',
+                        'message' => 'Message sent successfully'
+                    ];
+                } else {
+                    $failureCount++;
+                    $results[] = [
+                        'chat_id' => $chatId,
+                        'status' => 'failed',
+                        'message' => $response->json()['description'] ?? 'Unknown error'
+                    ];
+                }
+            } catch (\Throwable $e) {
+                $failureCount++;
+                $results[] = [
+                    'chat_id' => $chatId,
+                    'status' => 'error',
+                    'message' => $e->getMessage()
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => 'completed',
+            'summary' => [
+                'total' => count($chatIds),
+                'success' => $successCount,
+                'failed' => $failureCount
+            ],
+            'results' => $results
+        ]);
+    }
+
+    /**
+     * اختبار إرسال Webhook
+     * يرسل payload اختباري لجميع الـ Webhook URLs المسجلة
+     */
+    public function testWebhook(Request $request)
+    {
+        $settings = BackupSetting::firstOrFail();
+
+        // التحقق من تفعيل Webhook
+        if (!$settings->webhook_enabled) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Webhook notifications are disabled in settings'
+            ], 400);
+        }
+
+        // جمع Webhook URLs من المصدرين (admins + settings)
+        $admins = \App\Models\BackupAdmin::where('active', true)->get();
+
+        $adminWebhooks = $admins
+            ->filter(fn($a) => in_array('webhook', (array)$a->notify_via) && $a->webhook_url)
+            ->flatMap(fn($a) => $this->splitByComma($a->webhook_url))
+            ->unique()
+            ->all();
+
+        $settingsWebhooks = !empty($settings->webhook_urls)
+            ? collect($this->splitByComma($settings->webhook_urls))->unique()->all()
+            : [];
+
+        $webhookUrls = collect($adminWebhooks)
+            ->merge($settingsWebhooks)
+            ->unique()
+            ->filter()
+            ->all();
+
+        if (empty($webhookUrls)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No webhook URLs found. Please add URLs in settings or admins.'
+            ], 400);
+        }
+
+        // إعداد الـ Payload الاختباري
+        $testPayload = [
+            'event' => 'backup.test',
+            'timestamp' => now()->toIso8601String(),
+            'message' => 'This is a test webhook from ' . config('app.name', 'Backup System'),
+            'test' => true,
+            'data' => [
+                'app_name' => config('app.name', 'Backup System'),
+                'environment' => config('app.env', 'production'),
+                'test_time' => now()->toDateTimeString(),
+            ]
+        ];
+
+        $results = [];
+        $successCount = 0;
+        $failureCount = 0;
+
+        foreach ($webhookUrls as $url) {
+            try {
+                $req = \Illuminate\Support\Facades\Http::asJson();
+
+                // إضافة التوقيع إذا كان Secret موجود
+                if (!empty($settings->webhook_secret)) {
+                    $json = json_encode($testPayload);
+                    $signature = hash_hmac('sha256', $json, $settings->webhook_secret);
+                    $req = $req->withHeaders(['X-Backup-Signature' => "sha256={$signature}"]);
+                }
+
+                $response = $req->post($url, $testPayload);
+
+                if ($response->successful()) {
+                    $successCount++;
+                    $results[] = [
+                        'url' => $url,
+                        'status' => 'success',
+                        'http_code' => $response->status(),
+                        'message' => 'Webhook sent successfully'
+                    ];
+                } else {
+                    $failureCount++;
+                    $results[] = [
+                        'url' => $url,
+                        'status' => 'failed',
+                        'http_code' => $response->status(),
+                        'message' => 'HTTP ' . $response->status()
+                    ];
+                }
+            } catch (\Throwable $e) {
+                $failureCount++;
+                $results[] = [
+                    'url' => $url,
+                    'status' => 'error',
+                    'message' => $e->getMessage()
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => 'completed',
+            'summary' => [
+                'total' => count($webhookUrls),
+                'success' => $successCount,
+                'failed' => $failureCount
+            ],
+            'payload_sent' => $testPayload,
+            'results' => $results
+        ]);
+    }
+
+    /**
+     * Helper: تقسيم النص بالفاصلة
+     */
+    private function splitByComma(?string $value): array
+    {
+        if (empty($value)) {
+            return [];
+        }
+
+        return collect(explode(',', $value))
+            ->map(fn($item) => trim($item))
+            ->filter()
+            ->all();
+    }
 }

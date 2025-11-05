@@ -24,6 +24,10 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('backup')->
     // اختبار البريد الإلكتروني
     Route::post('test-email', [BackupController::class, 'testEmail']); // إرسال email تجريبي
     Route::get('preview-email', [BackupController::class, 'previewEmail']); // معاينة Email في المتصفح
+
+    // اختبار Telegram و Webhook
+    Route::post('test-telegram', [BackupController::class, 'testTelegram']); // اختبار إرسال Telegram
+    Route::post('test-webhook', [BackupController::class, 'testWebhook']); // اختبار إرسال Webhook
 });
 
 // فحص الحالة
