@@ -43,15 +43,81 @@ class NotificationManager
         if ($settings->notify_on === 'success' && $event !== 'success') return;
         if ($settings->notify_on === 'failure' && $event !== 'failure') return;
 
-        // جلب الإدمنية الفعّالين ووسائل الإرسال المختارة لهم
-        $admins   = \App\Models\BackupAdmin::where('active', true)->get();
-        $emails   = $admins->filter(fn($a) => in_array('email', (array)$a->notify_via) && $a->email)->pluck('email')->all();
-        $chatIds  = $admins->filter(fn($a) => in_array('telegram', (array)$a->notify_via) && $a->telegram_id)->pluck('telegram_id')->all();
+        // ===========================
+        // جمع المستلمين من المصدرين: backup_admins + backup_settings
+        // ===========================
 
-        \Log::info('Notification recipients', ['emails' => $emails, 'chat_ids' => $chatIds]);
+        // 1. من جدول backup_admins (الأدمنز الفعّالين)
+        $admins = \App\Models\BackupAdmin::where('active', true)->get();
+
+        $adminEmails = $admins
+            ->filter(fn($a) => in_array('email', (array)$a->notify_via) && $a->email)
+            ->flatMap(fn($a) => self::splitByComma($a->email))
+            ->unique()
+            ->all();
+
+        $adminChatIds = $admins
+            ->filter(fn($a) => in_array('telegram', (array)$a->notify_via) && $a->telegram_id)
+            ->flatMap(fn($a) => self::splitByComma($a->telegram_id))
+            ->unique()
+            ->all();
+
+        $adminWebhooks = $admins
+            ->filter(fn($a) => in_array('webhook', (array)$a->notify_via) && $a->webhook_url)
+            ->flatMap(fn($a) => self::splitByComma($a->webhook_url))
+            ->unique()
+            ->all();
+
+        // 2. من backup_settings (القيم الافتراضية)
+        $settingsEmails = !empty($settings->emails)
+            ? collect(self::splitByComma($settings->emails))->unique()->all()
+            : [];
+
+        $settingsChatIds = !empty($settings->telegram_chat_ids)
+            ? collect(self::splitByComma($settings->telegram_chat_ids))->unique()->all()
+            : [];
+
+        $settingsWebhooks = !empty($settings->webhook_urls)
+            ? collect(self::splitByComma($settings->webhook_urls))->unique()->all()
+            : [];
+
+        // 3. دمج المستلمين من المصدرين وإزالة التكرار
+        $emails = collect($adminEmails)
+            ->merge($settingsEmails)
+            ->unique()
+            ->filter()
+            ->all();
+
+        $chatIds = collect($adminChatIds)
+            ->merge($settingsChatIds)
+            ->unique()
+            ->filter()
+            ->all();
+
+        $webhookUrls = collect($adminWebhooks)
+            ->merge($settingsWebhooks)
+            ->unique()
+            ->filter()
+            ->all();
+
+        \Log::info('Notification recipients', [
+            'emails' => $emails,
+            'chat_ids' => $chatIds,
+            'webhooks' => $webhookUrls,
+            'sources' => [
+                'admins_count' => $admins->count(),
+                'admin_emails' => count($adminEmails),
+                'admin_chat_ids' => count($adminChatIds),
+                'admin_webhooks' => count($adminWebhooks),
+                'settings_emails' => count($settingsEmails),
+                'settings_chat_ids' => count($settingsChatIds),
+                'settings_webhooks' => count($settingsWebhooks),
+            ]
+        ]);
 
         // إن لم يوجد أحد لاستلام الإشعار، لا نكمل
-        if (empty($emails) && empty($chatIds) && empty($settings->webhook_urls)) {
+        if (empty($emails) && empty($chatIds) && empty($webhookUrls)) {
+            \Log::info('No recipients found for notifications');
             return;
         }
 
@@ -224,13 +290,8 @@ class NotificationManager
         // ===========================
         // 3) Webhook
         // ===========================
-        if ($settings->webhook_enabled && !empty($settings->webhook_urls)) {
-            $urls = collect(explode(',', $settings->webhook_urls))
-                ->map(fn($u) => trim($u))
-                ->filter()
-                ->all();
-
-            foreach ($urls as $url) {
+        if ($settings->webhook_enabled && !empty($webhookUrls)) {
+            foreach ($webhookUrls as $url) {
                 try {
                     $body = $payload; // يتضمن temp_urls
                     $req  = Http::asJson();
@@ -299,5 +360,24 @@ class NotificationManager
         }
 
         return round($bytes, $precision) . ' ' . $units[$i];
+    }
+
+    /**
+     * تقسيم النص بالفاصلة وإزالة المسافات الفارغة
+     * يدعم قيم مفردة أو متعددة مفصولة بفاصلة
+     *
+     * @param string|null $value القيمة المدخلة
+     * @return array مصفوفة من القيم النظيفة
+     */
+    private static function splitByComma(?string $value): array
+    {
+        if (empty($value)) {
+            return [];
+        }
+
+        return collect(explode(',', $value))
+            ->map(fn($item) => trim($item))
+            ->filter()
+            ->all();
     }
 }

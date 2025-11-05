@@ -12,11 +12,16 @@ class BackupAdminRequest extends FormRequest
     {
         return [
             'name' => ['required','string','max:100'],
-            'email' => ['nullable','email','max:150'],
-            'telegram_id' => ['nullable','string','max:50'],
+            // يدعم email واحد أو عدة emails مفصولة بفاصلة
+            'email' => ['nullable','string','max:500'],
+            // يدعم telegram_id واحد أو عدة IDs مفصولة بفاصلة
+            'telegram_id' => ['nullable','string','max:200'],
+            // يدعم webhook_url واحد أو عدة URLs مفصولة بفاصلة
+            'webhook_url' => ['nullable','string','max:1000'],
             'active' => ['boolean'],
             'notify_via' => ['array'],
-            'notify_via.*' => ['in:telegram,email'],
+            // إضافة webhook كخيار في notify_via
+            'notify_via.*' => ['in:telegram,email,webhook'],
         ];
     }
 }

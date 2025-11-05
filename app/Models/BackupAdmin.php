@@ -10,6 +10,7 @@ class BackupAdmin extends Model
         'name',
         'email',
         'telegram_id',
+        'webhook_url',
         'active',
         'notify_via',
     ];
