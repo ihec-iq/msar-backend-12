@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 # تثبيت Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# نسخ ملفات المشروع بما فيها .nixpacks
+# نسخ ملفات المشروع بما فيها _nixpacks
 COPY . /var/www
 
 # تحديد مجلد العمل
@@ -30,9 +30,9 @@ WORKDIR /var/www
 
 # إعداد Supervisor
 RUN mkdir -p /etc/supervisor/conf.d/ \
- && cp .nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
- && cp .nixpacks/supervisord.conf /etc/supervisord.conf \
- && chmod +x .nixpacks/start.sh
+ && cp _nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
+ && cp _nixpacks/supervisord.conf /etc/supervisord.conf \
+ && chmod +x _nixpacks/start.sh
 
 # تثبيت الحزم
 RUN composer install --no-dev --optimize-autoloader
@@ -41,4 +41,4 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 # أمر التشغيل
-CMD ["/.nixpacks/start.sh"]
+CMD ["/_nixpacks/start.sh"]

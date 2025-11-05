@@ -15,21 +15,21 @@ nixPkgs = [
 [phases.build]
 cmds = [
     "mkdir -p /etc/supervisor/conf.d/",
-    "cp WORKDIR /var/www /.nixpacks/worker-*.conf /etc/supervisor/conf.d/",
-    "cp /.nixpacks/supervisord.conf /etc/supervisord.conf",
-    "chmod +x /.nixpacks/start.sh",
+    "cp WORKDIR /var/www /_nixpacks/worker-*.conf /etc/supervisor/conf.d/",
+    "cp /_nixpacks/supervisord.conf /etc/supervisord.conf",
+    "chmod +x /_nixpacks/start.sh",
     "..."
 ]
 
 [start]
-cmd = '/.nixpacks/start.sh'
+cmd = '/_nixpacks/start.sh'
 
 [staticAssets]
 "start.sh" = '''
 #!/bin/bash
 
 # Transform the nginx configuration
-node /.nixpacks/scripts/prestart.mjs /.nixpacks/nginx.template.conf /etc/nginx.conf
+node /_nixpacks/scripts/prestart.mjs /_nixpacks/nginx.template.conf /etc/nginx.conf
 
 # Start supervisor
 supervisord -c /etc/supervisord.conf -n
@@ -37,14 +37,14 @@ supervisord -c /etc/supervisord.conf -n
 
 "supervisord.conf" = '''
 [unix_http_server]
-file=/.nixpacks/supervisor.sock
+file=/_nixpacks/supervisor.sock
 
 [supervisord]
 logfile=/var/log/supervisord.log
 logfile_maxbytes=50MB
 logfile_backups=10
 loglevel=info
-pidfile=/.nixpacks/supervisord.pid
+pidfile=/_nixpacks/supervisord.pid
 nodaemon=false
 silent=false
 minfds=1024
@@ -73,7 +73,7 @@ stderr_logfile=/var/log/worker-nginx.log
 "worker-phpfpm.conf" = '''
 [program:worker-phpfpm]
 process_name=%(program_name)s_%(process_num)02d
-command=php-fpm -y /.nixpacks/php-fpm.conf -F
+command=php-fpm -y /_nixpacks/php-fpm.conf -F
 autostart=true
 autorestart=true
 stdout_logfile=/var/log/worker-phpfpm.log
