@@ -1,47 +1,46 @@
+# ===== Base image (PHP-FPM) =====
 FROM php:8.2-fpm
 
-# حزم لازمة + nginx + supervisor
-RUN apt-get update && apt-get install -y \
-    git unzip zip \
-    libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libxml2-dev \
-    default-mysql-client \
+# ===== System & PHP extensions =====
+RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx supervisor \
+    git unzip ca-certificates \
+    libzip-dev zip \
+    libpng-dev libjpeg-dev libfreetype6-dev \
+    libonig-dev libxml2-dev \
+    default-mysql-client \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install gd zip pdo pdo_mysql \
+ && docker-php-ext-install zip gd \
  && rm -rf /var/lib/apt/lists/*
 
-# Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# ===== Composer =====
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# مجلد العمل
-WORKDIR /var/www
+# ===== Workdir =====
+WORKDIR /app
 
-# نسخ المشروع
-COPY . .
+# ===== App files =====
+COPY . /app
 
-# تثبيت باكجات PHP (اختياري)
-RUN composer install --no-dev --optimize-autoloader || true
-
-# صلاحيات Laravel (إن وُجد)
-RUN chown -R www-data:www-data storage bootstrap/cache || true
-
-# 🔹 انسخ مجلد _nixpacks كاملاً إلى مسار ثابت في النظام
-COPY . /app/.
-RUN mkdir -p /etc/supervisor/conf.d
-
-# انسخ مجلد _nixpacks داخل الصورة لمسار ثابت
+# ===== _nixpacks assets (المجلد الذي يحتوي ملفات المشرف والبدء) =====
 COPY _nixpacks /_nixpacks
 
-# انسخ ملفات الـ supervisor واعطِ صلاحية التنفيذ للستارت
-RUN cp /_nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
+# انسخ إعدادات PHP-FPM (نفس المسار الذي تحتاجه السكربتات/السوبرفايزر)
+RUN mkdir -p /assets \
+ && cp /_nixpacks/php-fpm.conf /assets/php-fpm.conf
+
+# ===== Supervisor configs =====
+RUN mkdir -p /etc/supervisor/conf.d \
+ && cp /_nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
  && cp /_nixpacks/supervisord.conf /etc/supervisord.conf \
  && chmod +x /_nixpacks/start.sh
 
-# 🔹 nginx و php-fpm config (لو تستخدمهم من مجلدك)
-RUN mkdir -p /var/log/nginx /var/cache/nginx
-COPY _nixpacks/nginx.template.conf /etc/nginx/conf.d/default.conf
-COPY _nixpacks/php-fpm.conf /_nixpacks/php-fpm.conf
+# ===== PHP deps & permissions =====
+RUN composer install --no-dev --prefer-dist --optimize-autoloader \
+ && chown -R www-data:www-data /app/storage /app/bootstrap/cache
 
+# المنفذ الذي سيخدمه Nginx داخل الحاوية
 EXPOSE 80
 
+# ===== Start everything (nginx + php-fpm عبر supervisord) =====
 CMD ["/_nixpacks/start.sh"]
