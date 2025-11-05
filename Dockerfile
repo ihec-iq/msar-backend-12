@@ -26,13 +26,16 @@ RUN composer install --no-dev --optimize-autoloader || true
 RUN chown -R www-data:www-data storage bootstrap/cache || true
 
 # 🔹 انسخ مجلد _nixpacks كاملاً إلى مسار ثابت في النظام
+COPY . /app/.
+RUN mkdir -p /etc/supervisor/conf.d
+
+# انسخ مجلد _nixpacks داخل الصورة لمسار ثابت
 COPY _nixpacks /_nixpacks
 
-# 🔹 ضبّط ملفات Supervisor وامنح start.sh صلاحية التنفيذ
-RUN mkdir -p /etc/supervisor/conf.d \
-    && cp /_nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
-    && cp /_nixpacks/supervisord.conf /etc/supervisord.conf \
-    && chmod +x /_nixpacks/start.sh
+# انسخ ملفات الـ supervisor واعطِ صلاحية التنفيذ للستارت
+RUN cp /_nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
+ && cp /_nixpacks/supervisord.conf /etc/supervisord.conf \
+ && chmod +x /_nixpacks/start.sh
 
 # 🔹 nginx و php-fpm config (لو تستخدمهم من مجلدك)
 RUN mkdir -p /var/log/nginx /var/cache/nginx
