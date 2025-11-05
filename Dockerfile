@@ -1,48 +1,39 @@
-# ===== Base Image =====
 FROM php:8.2-fpm
 
-# ===== OS deps (nginx + supervisor + tools) =====
+# حزم النظام + nginx + supervisor + ملحقات PHP الشائعة
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx \
-    supervisor \
-    git \
-    unzip \
-    zip \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    default-mysql-client \
+    nginx supervisor git unzip libzip-dev zip \
+    libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libxml2-dev \
+    default-mysql-client ca-certificates curl \
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install zip gd pdo pdo_mysql \
  && rm -rf /var/lib/apt/lists/*
 
-# PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install zip gd
-
-# composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# ===== App files =====
+# كود المشروع
 WORKDIR /var/www
-COPY . /var/www
+COPY . .
 
-# انسخ مجلد إعداداتنا إلى جذر النظام حتى تبقى المسارات المتوقعة كما هي
-# (وبالتالي ما نغيّر أي شيء داخل ملفات الإعداد)
-RUN cp -r /var/www/_nixpacks /_nixpacks
+# تثبيت PHP deps (لو عندك composer.json)
+RUN composer install --no-dev --optimize-autoloader || true
 
-# إعدادات supervisor
-RUN mkdir -p /etc/supervisor/conf.d \
+# صلاحيات Laravel
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
+
+# نسخ ملفات التشغيل (المجلد الجديد _nixpacks)
+COPY _nixpacks/ /_nixpacks/
+
+# تفعيل إعدادات nginx و supervisor و صلاحيات السكربت
+RUN mkdir -p /etc/supervisor/conf.d /run/php \
+ && cp /_nixpacks/nginx.template.conf /etc/nginx/nginx.conf \
  && cp /_nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
  && cp /_nixpacks/supervisord.conf /etc/supervisord.conf \
  && chmod +x /_nixpacks/start.sh
 
-# Laravel deps (اختياري: إذا تحتاج dev packages شيل --no-dev)
-RUN composer install --no-dev --optimize-autoloader
+# المنفذ
+EXPOSE 80
 
-# Permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-
-# ===== Entrypoint =====
-CMD ["/_nixpacks/start.sh"]
+# التشغيل
+CMD ["bash", "/_nixpacks/start.sh"]
