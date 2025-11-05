@@ -1,34 +1,44 @@
+# الصورة الأساسية
 FROM php:8.2-fpm
 
-# تثبيت الأدوات والمكتبات اللازمة
+# تثبيت الأدوات والمكتبات
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
-    libzip-dev \
     zip \
+    libzip-dev \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
     default-mysql-client \
+    nodejs \
+    python3 \
+    python3-pip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install zip gd
 
 # تثبيت Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# نسخ ملفات الـ nixpacks
-COPY .nixpacks/ .nixpacks/
+# نسخ ملفات المشروع بما فيها .nixpacks
+COPY . /var/www
 
 # تحديد مجلد العمل
 WORKDIR /var/www
 
-# نسخ كل ملفات المشروع
-COPY . .
+# إعداد Supervisor
+RUN mkdir -p /etc/supervisor/conf.d/ \
+ && cp .nixpacks/worker-*.conf /etc/supervisor/conf.d/ \
+ && cp .nixpacks/supervisord.conf /etc/supervisord.conf \
+ && chmod +x .nixpacks/start.sh
 
 # تثبيت الحزم
 RUN composer install --no-dev --optimize-autoloader
 
 # إعداد صلاحيات Laravel (اختياري)
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+# أمر التشغيل
+CMD ["/.nixpacks/start.sh"]
