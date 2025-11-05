@@ -70,7 +70,7 @@ return [
                 // حسب ما اتفقنا: نسخة متّسقة بدون قفل
                 'use_single_transaction' => true,
                 // وقت التنفيذ الأقصى (ثواني)
-                'timeout' => 300,
+                'timeout' => 3000,
                 // خيار إضافي آمن لمايSQL 8
                 'add_extra_option' => '--no-tablespaces',
             ],
