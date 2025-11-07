@@ -15,6 +15,13 @@ class Kernel extends ConsoleKernel
     {
         // موجود سابقاً: dynamic-backup-runner ...
 
+        // النسخ الاحتياطي التلقائي - يتم فحصه كل دقيقة
+        // الـ Command نفسه يتحقق من الفترة الزمنية المحددة في الإعدادات
+        $schedule->command('backup:auto')
+            ->everyMinute()
+            ->name('auto-backup-runner')
+            ->withoutOverlapping();
+
         // مراقبة Stale
         $schedule->call(function () {
             $s = \App\Models\BackupSetting::first();

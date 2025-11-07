@@ -36,3 +36,9 @@ Route::get('/setBotWebhook/{site}', function ($site) {
     $reposnse = Http::get($url);
     return response()->json($reposnse->json());
 });
+Route::get('/testwebhook', function ($resq='test webhook working fine') { 
+    $reposnse = ['message' => 'test webhook working fine' , 'status' => 200,'request'=>$resq];
+    Log::info('test webhook working fine', ['request'=>$resq]);
+    return response()->json($reposnse);
+});
+//http://localhost/msar-backend-12/public/api/testwebhook

@@ -17,6 +17,7 @@ class BackupSettingsController extends Controller
 
     public function update(BackupSettingsRequest $request)
     {
+        Log::info('BackupSettingsController@update called', ['validated_data' => $request->validated()]);
         $s = BackupSetting::firstOrFail();
         $s->fill($request->validated())->save();
         return $s->refresh();

@@ -29,6 +29,7 @@ class BackupSettingsRequest extends FormRequest
             'telegram_enabled',
             'email_enabled',
             'webhook_enabled',
+            'auto_backup_enabled',
         ];
 
         $data = [];
@@ -53,6 +54,7 @@ class BackupSettingsRequest extends FormRequest
             'keep_yearly_years',
             'temp_link_expiry',
             'stale_hours',
+            'auto_backup_interval',
         ];
 
         foreach ($integerFields as $field) {
@@ -112,6 +114,11 @@ class BackupSettingsRequest extends FormRequest
             'webhook_urls' => ['nullable','string'], // عدة URLs بفارزة
             'webhook_secret' => ['nullable','string'],
             'stale_hours' => ['integer','min:6','max:168'], // 6 إلى 7 أيام
+
+            // النسخ التلقائي
+            'auto_backup_enabled' => ['boolean'],
+            'auto_backup_interval' => ['integer','min:1'], // بالدقائق، على الأقل دقيقة واحدة
+            'auto_backup_type' => ['in:db,files,both'],
         ];
     }
 }
