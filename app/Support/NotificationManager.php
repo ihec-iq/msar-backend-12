@@ -129,7 +129,10 @@ class NotificationManager
         $tempUrls = [];
 
         foreach ($paths as $p) {
-            $tempUrls[$p] = url()->temporarySignedRoute(
+            // توليد رابط موقع مؤقت
+            // نستخدم URL::temporarySignedRoute بدلاً من url()->temporarySignedRoute
+            // لضمان استخدام الـ APP_URL بشكل صحيح
+            $tempUrls[$p] = \Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'backup.download',
                 now()->addMinutes($expiryMinutes),
                 [

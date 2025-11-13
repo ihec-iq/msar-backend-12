@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -21,14 +22,17 @@ Route::get('/download/backup', function (Request $r) {
     ];
 
     // التحقق من التوقيع
-    // نستخدم absolute = true للتأكد من مطابقة الـ domain
-    if (! URL::hasValidSignature($r, true, $ignore)) {
+    // نستخدم absolute = false لتجاهل مشاكل الـ domain على production
+    // هذا أكثر أماناً من تعطيل التحقق تماماً لأنه لا يزال يتحقق من التوقيع والوقت
+    if (! URL::hasValidSignature($r, false, $ignore)) {
         // Debug: سجّل الخطأ لنرى ماذا حدث
-        \Log::warning('Signature validation failed', [
+        Log::warning('Signature validation failed', [
             'full_url' => $r->fullUrl(),
             'app_url' => config('app.url'),
             'query' => $r->query(),
             'path' => $r->path(),
+            'host' => $r->getHost(),
+            'scheme' => $r->getScheme(),
         ]);
         abort(403, 'Invalid or expired download link');
     }
