@@ -1,10 +1,9 @@
-#!/usr/bin/env bash
-set -e
-
-# Container startup script for Laravel application
-# Manages initialization and supervisor startup
+#!/bin/bash
 
 echo "Starting Laravel application container..."
+
+# Set default PORT
+export PORT=${PORT:-8000}
 
 # Create required directories
 mkdir -p /tmp
@@ -13,11 +12,10 @@ mkdir -p /etc/nginx
 mkdir -p /etc/php-fpm
 mkdir -p /etc/supervisor/conf.d
 
-# Copy configuration files from _nixpacks to system locations
 echo "Setting up configuration files..."
 
-# Copy Nginx configuration
-cp /nixpacks/config/nginx.conf /etc/nginx/nginx.conf
+# Copy and substitute Nginx configuration
+envsubst '${PORT}' < /nixpacks/config/nginx.conf > /etc/nginx/nginx.conf
 chmod 644 /etc/nginx/nginx.conf
 
 # Copy PHP-FPM configuration
@@ -35,12 +33,13 @@ chmod 644 /etc/supervisor/conf.d/*.conf
 # Laravel initialization (if artisan exists)
 if [ -f /app/artisan ]; then
     echo "Running Laravel initialization..."
-    php /app/artisan config:cache || true
-    php /app/artisan route:cache || true
-    php /app/artisan view:cache || true
-    php /app/artisan migrate --force || true
+    cd /app
+    php artisan config:cache || true
+    php artisan route:cache || true
+    php artisan view:cache || true
+    php artisan migrate --force || true
 fi
 
 # Start supervisor in foreground mode
 echo "Starting Supervisor..."
-exec /usr/bin/supervisord -c /etc/supervisord.conf
+/usr/bin/supervisord -c /etc/supervisord.conf
