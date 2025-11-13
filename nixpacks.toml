@@ -39,10 +39,7 @@ cmds = [
   # Create required system directories
   "mkdir -p /etc/supervisor/conf.d/",
   "mkdir -p /etc/nginx",
-  "mkdir -p /etc/php-fpm",
-  
-  # Set proper permissions
-  "chmod +x /nixpacks/scripts/start.sh"
+  "mkdir -p /etc/php-fpm"
 ]
 
 [start]

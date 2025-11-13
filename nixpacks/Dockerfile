@@ -55,18 +55,12 @@ WORKDIR /app
 COPY --from=builder /app /app
 COPY --chown=www-data:www-data . /app
 
-# Copy nixpacks configuration (this will be provided at build time)
-COPY nixpacks /nixpacks
-
 # Create required directories
 RUN mkdir -p /var/log/nginx \
     && mkdir -p /etc/supervisor/conf.d \
     && mkdir -p /tmp \
     && chown -R www-data:www-data /app/storage \
     && chown -R www-data:www-data /app/bootstrap/cache
-
-# Ensure start script is executable
-RUN chmod +x /nixpacks/scripts/start.sh
 
 # Expose port
 EXPOSE 8000
