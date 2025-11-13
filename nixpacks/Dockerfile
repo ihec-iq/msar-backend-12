@@ -56,7 +56,7 @@ COPY --from=builder /app /app
 COPY --chown=www-data:www-data . /app
 
 # Copy nixpacks configuration (this will be provided at build time)
-COPY _nixpacks /_nixpacks
+COPY nixpacks /nixpacks
 
 # Create required directories
 RUN mkdir -p /var/log/nginx \
@@ -66,7 +66,7 @@ RUN mkdir -p /var/log/nginx \
     && chown -R www-data:www-data /app/bootstrap/cache
 
 # Ensure start script is executable
-RUN chmod +x /_nixpacks/scripts/start.sh
+RUN chmod +x /nixpacks/scripts/start.sh
 
 # Expose port
 EXPOSE 8000
@@ -76,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Set container startup command
-CMD ["/bin/bash", "/_nixpacks/scripts/start.sh"]
+CMD ["/bin/bash", "/nixpacks/scripts/start.sh"]
