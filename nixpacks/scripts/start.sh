@@ -2,9 +2,6 @@
 
 echo "Starting Laravel application container..."
 
-# Set default PORT
-export PORT=${PORT:-8000}
-
 # Create required directories
 mkdir -p /tmp
 mkdir -p /var/log
@@ -14,8 +11,8 @@ mkdir -p /etc/supervisor/conf.d
 
 echo "Setting up configuration files..."
 
-# Copy and substitute Nginx configuration
-envsubst '${PORT}' < /nixpacks/config/nginx.conf > /etc/nginx/nginx.conf
+# Copy Nginx configuration
+cp /nixpacks/config/nginx.conf /etc/nginx/nginx.conf
 chmod 644 /etc/nginx/nginx.conf
 
 # Copy PHP-FPM configuration
