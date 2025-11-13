@@ -41,35 +41,23 @@ POST /api/backup/settings
 
 ## الحقول المتاحة | Available Fields
 
-### القسم الأول: إعدادات عامة | General Settings
+### القسم الأول: إعدادات النسخ التلقائي | Auto Backup Settings
 
-#### 1. `enabled` (boolean)
-- **الوصف:** تفعيل/تعطيل نظام النسخ الاحتياطي بالكامل
-- **القيمة الافتراضية:** `false`
-- **ملاحظات:**
-  - عند التعطيل: يتم إيقاف جميع عمليات النسخ (اليدوي والتلقائي)
-  - هذا الحقل **لا يؤثر** على النسخ التلقائي بشكل مباشر
-- **واجهة المستخدم:** Toggle/Switch في أعلى الصفحة أو في قسم "General Settings"
-
----
-
-### القسم الثاني: إعدادات النسخ التلقائي | Auto Backup Settings
-
-#### 2. `auto_backup_enabled` (boolean)
+#### 1. `auto_backup_enabled` (boolean)
 - **الوصف:** تفعيل/تعطيل النسخ الاحتياطي التلقائي
 - **القيمة الافتراضية:** `false`
 - **ملاحظات:**
-  - هذا هو **المفتاح الرئيسي** للنسخ التلقائي
+  - هذا هو **المفتاح الرئيسي والوحيد** للتحكم بكل النظام
   - عند التفعيل: يبدأ النظام بأخذ نسخ احتياطية تلقائية حسب الفترة المحددة
   - عند التعطيل: يتوقف النسخ التلقائي تماماً
-  - **لا يتطلب** تفعيل `enabled` للعمل
+  - **لا يوجد** حقل `enabled` منفصل - تم إزالته لتبسيط النظام
 - **واجهة المستخدم:**
   - Toggle/Switch بارز في قسم "Auto Backup"
   - يفضل أن يكون بلون مميز (مثلاً أخضر عند التفعيل)
   - عند التفعيل: يظهر باقي حقول النسخ التلقائي
   - عند التعطيل: يمكن إخفاء أو تعطيل باقي الحقول
 
-#### 3. `auto_backup_interval` (integer)
+#### 2. `auto_backup_interval` (integer)
 - **الوصف:** الفترة الزمنية بين كل نسخة تلقائية (بالدقائق)
 - **القيمة الافتراضية:** `1440` (24 ساعة = يوم واحد)
 - **القيم الصالحة:** `>= 1` (على الأقل دقيقة واحدة)
@@ -95,7 +83,7 @@ POST /api/backup/settings
   - **خيار 3:** مجموعة Radio Buttons للخيارات الشائعة + Custom Input
   - **توصية:** إضافة نص توضيحي يحول الدقائق إلى ساعات/أيام (مثلاً: "1440 دقيقة = يوم واحد")
 
-#### 4. `auto_backup_type` (enum)
+#### 3. `auto_backup_type` (enum)
 - **الوصف:** نوع النسخة الاحتياطية التلقائية
 - **القيمة الافتراضية:** `"both"`
 - **القيم الصالحة:**
@@ -114,7 +102,7 @@ POST /api/backup/settings
     - 📁 Files
     - 📦 Both
 
-#### 5. `last_auto_backup_at` (timestamp, nullable, READ-ONLY)
+#### 4. `last_auto_backup_at` (timestamp, nullable, READ-ONLY)
 - **الوصف:** آخر وقت تم فيه تشغيل نسخة تلقائية
 - **القيمة:** `null` إذا لم يتم تشغيل نسخة تلقائية من قبل، أو timestamp
 - **ملاحظات:**
@@ -131,14 +119,14 @@ POST /api/backup/settings
 
 ---
 
-### القسم الثالث: إعدادات التخزين | Storage Settings
+### القسم الثاني: إعدادات التخزين | Storage Settings
 
-#### 6. `backup_path` (string)
+#### 5. `backup_path` (string)
 - **الوصف:** مسار حفظ النسخ الاحتياطية
 - **القيمة الافتراضية:** `storage/app/backups`
 - **واجهة المستخدم:** Text Input (مع توضيح أنه مسار نسبي من جذر المشروع)
 
-#### 7. `max_storage_mb` (integer, nullable)
+#### 6. `max_storage_mb` (integer, nullable)
 - **الوصف:** الحد الأقصى للمساحة المستخدمة للنسخ الاحتياطية (بالميجابايت)
 - **القيمة الافتراضية:** `null` (غير محدود)
 - **القيم الصالحة:** `>= 100` أو `null`
@@ -149,21 +137,21 @@ POST /api/backup/settings
 
 ---
 
-### القسم الرابع: إعدادات الاحتفاظ | Retention Settings
+### القسم الثالث: إعدادات الاحتفاظ | Retention Settings
 
-#### 8. `keep_daily_days` (integer, nullable)
+#### 7. `keep_daily_days` (integer, nullable)
 - **الوصف:** عدد الأيام للاحتفاظ بالنسخ اليومية
 - **القيمة الافتراضية:** `7`
 - **القيم الصالحة:** `>= 1` أو `null`
 - **واجهة المستخدم:** Number Input مع Label "الاحتفاظ بالنسخ اليومية لـ X أيام"
 
-#### 9. `keep_weekly_weeks` (integer, nullable)
+#### 8. `keep_weekly_weeks` (integer, nullable)
 - **الوصف:** عدد الأسابيع للاحتفاظ بالنسخ الأسبوعية
 - **القيمة الافتراضية:** `4`
 - **القيم الصالحة:** `>= 1` أو `null`
 - **واجهة المستخدم:** Number Input مع Label "الاحتفاظ بالنسخ الأسبوعية لـ X أسابيع"
 
-#### 10. `keep_monthly_months` (integer, nullable)
+#### 9. `keep_monthly_months` (integer, nullable)
 - **الوصف:** عدد الأشهر للاحتفاظ بالنسخ الشهرية
 - **القيمة الافتراضية:** `6`
 - **القيم الصالحة:** `>= 1` أو `null`
@@ -171,24 +159,24 @@ POST /api/backup/settings
 
 ---
 
-### القسم الخامس: إعدادات الإشعارات | Notification Settings
+### القسم الرابع: إعدادات الإشعارات | Notification Settings
 
-#### 11. `notify_enabled` (boolean)
+#### 10. `notify_enabled` (boolean)
 - **الوصف:** تفعيل/تعطيل الإشعارات عند اكتمال النسخ الاحتياطي
 - **القيمة الافتراضية:** `false`
 - **واجهة المستخدم:** Toggle/Switch في قسم "Notifications"
 
-#### 12. `notify_on_success` (boolean)
+#### 11. `notify_on_success` (boolean)
 - **الوصف:** إرسال إشعار عند نجاح النسخة
 - **القيمة الافتراضية:** `true`
 - **واجهة المستخدم:** Checkbox (يظهر عند تفعيل `notify_enabled`)
 
-#### 13. `notify_on_failure` (boolean)
+#### 12. `notify_on_failure` (boolean)
 - **الوصف:** إرسال إشعار عند فشل النسخة
 - **القيمة الافتراضية:** `true`
 - **واجهة المستخدم:** Checkbox (يظهر عند تفعيل `notify_enabled`)
 
-#### 14. `stale_hours` (integer, nullable)
+#### 13. `stale_hours` (integer, nullable)
 - **الوصف:** عدد الساعات بدون نسخة ناجحة قبل إرسال تنبيه
 - **القيمة الافتراضية:** `48`
 - **القيم الصالحة:** `>= 1` أو `null`
@@ -197,20 +185,20 @@ POST /api/backup/settings
 
 ---
 
-### القسم السادس: قنوات الإشعارات - Telegram
+### القسم الخامس: قنوات الإشعارات - Telegram
 
-#### 15. `telegram_enabled` (boolean)
+#### 14. `telegram_enabled` (boolean)
 - **الوصف:** تفعيل إشعارات Telegram
 - **القيمة الافتراضية:** `false`
 - **واجهة المستخدم:** Toggle/Switch
 
-#### 16. `telegram_bot_token` (string, nullable)
+#### 15. `telegram_bot_token` (string, nullable)
 - **الوصف:** Telegram Bot Token
 - **واجهة المستخدم:**
   - Text Input (type="password" أو مع زر لإظهار/إخفاء)
   - Placeholder: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
 
-#### 17. `telegram_chat_ids` (array, nullable)
+#### 16. `telegram_chat_ids` (array, nullable)
 - **الوصف:** قائمة Chat IDs لإرسال الإشعارات إليها
 - **تنسيق البيانات:**
   - **في GET Response:** Array of strings مثل `["123456789", "-100123456789"]`
@@ -223,14 +211,14 @@ POST /api/backup/settings
 
 ---
 
-### القسم السابع: قنوات الإشعارات - Email
+### القسم السادس: قنوات الإشعارات - Email
 
-#### 18. `email_enabled` (boolean)
+#### 17. `email_enabled` (boolean)
 - **الوصف:** تفعيل إشعارات Email
 - **القيمة الافتراضية:** `false`
 - **واجهة المستخدم:** Toggle/Switch
 
-#### 19. `email_recipients` (array, nullable)
+#### 18. `email_recipients` (array, nullable)
 - **الوصف:** قائمة البريد الإلكتروني لإرسال الإشعارات
 - **تنسيق البيانات:**
   - **في GET Response:** Array of strings مثل `["admin@example.com", "backup@example.com"]`
@@ -243,21 +231,21 @@ POST /api/backup/settings
 
 ---
 
-### القسم الثامن: قنوات الإشعارات - Webhook
+### القسم السابع: قنوات الإشعارات - Webhook
 
-#### 20. `webhook_enabled` (boolean)
+#### 19. `webhook_enabled` (boolean)
 - **الوصف:** تفعيل إشعارات Webhook
 - **القيمة الافتراضية:** `false`
 - **واجهة المستخدم:** Toggle/Switch
 
-#### 21. `webhook_url` (string, nullable)
+#### 20. `webhook_url` (string, nullable)
 - **الوصف:** URL الـ Webhook لإرسال الإشعارات
 - **واجهة المستخدم:**
   - Text Input (type="url")
   - Placeholder: "https://example.com/webhook/backup"
   - Validation: يجب أن يبدأ بـ https://
 
-#### 22. `webhook_secret` (string, nullable)
+#### 21. `webhook_secret` (string, nullable)
 - **الوصف:** Secret Key للتوقيع على طلبات Webhook
 - **واجهة المستخدم:**
   - Text Input (type="password" أو مع زر لإظهار/إخفاء)
@@ -265,9 +253,9 @@ POST /api/backup/settings
 
 ---
 
-### القسم التاسع: إشعارات المشرفين | Admin Notifications
+### القسم الثامن: إشعارات المشرفين | Admin Notifications
 
-#### 23. `notify_admins` (boolean)
+#### 22. `notify_admins` (boolean)
 - **الوصف:** إرسال إشعارات لجميع المشرفين المسجلين
 - **القيمة الافتراضية:** `false`
 - **ملاحظات:**
@@ -287,13 +275,7 @@ POST /api/backup/settings
 
 ---
 
-#### **2. General Settings Card**
-- `enabled` Toggle
-- وصف قصير: "تفعيل/تعطيل نظام النسخ الاحتياطي بالكامل"
-
----
-
-#### **3. Auto Backup Settings Card** ⭐ (الأهم)
+#### **2. Auto Backup Settings Card** ⭐ (الأهم والرئيسي)
 - **العنوان:** "Automatic Backup" / "النسخ التلقائي"
 - **الترتيب:**
   1. `auto_backup_enabled` Toggle (بارز ومميز)
@@ -305,19 +287,19 @@ POST /api/backup/settings
        - الوقت المتبقي للنسخة التالية (Countdown)
        - Progress Bar للفترة الزمنية
 - **ملاحظة هامة:**
-  - يجب إبراز أن هذا القسم **مستقل** عن `enabled`
-  - نص توضيحي: "النسخ التلقائي يعمل بشكل مستقل ولا يتطلب تفعيل النظام العام"
+  - هذا هو **المفتاح الوحيد** للتحكم بكل النظام
+  - نص توضيحي: "تفعيل هذا الخيار يبدأ النسخ التلقائي حسب الإعدادات المحددة"
 
 ---
 
-#### **4. Storage Settings Card**
+#### **3. Storage Settings Card**
 - `backup_path` Input
 - `max_storage_mb` (Checkbox + Number Input)
 - عرض المساحة الحالية المستخدمة (إن أمكن)
 
 ---
 
-#### **5. Retention Policy Card**
+#### **4. Retention Policy Card**
 - `keep_daily_days` Input
 - `keep_weekly_weeks` Input
 - `keep_monthly_months` Input
@@ -325,7 +307,7 @@ POST /api/backup/settings
 
 ---
 
-#### **6. Notifications Card**
+#### **5. Notifications Card**
 - `notify_enabled` Toggle (رئيسي)
 - **عند التفعيل:**
   - `notify_on_success` Checkbox
@@ -335,22 +317,22 @@ POST /api/backup/settings
 
 ---
 
-#### **7. Notification Channels Section**
+#### **6. Notification Channels Section**
 
-**7.1 Telegram Sub-Card**
+**6.1 Telegram Sub-Card**
 - `telegram_enabled` Toggle
 - **عند التفعيل:**
   - `telegram_bot_token` Input
   - `telegram_chat_ids` Multiple Inputs/Tags
   - زر "Test Connection" (اختياري)
 
-**7.2 Email Sub-Card**
+**6.2 Email Sub-Card**
 - `email_enabled` Toggle
 - **عند التفعيل:**
   - `email_recipients` Multiple Inputs/Tags
   - زر "Send Test Email" (اختياري)
 
-**7.3 Webhook Sub-Card**
+**6.3 Webhook Sub-Card**
 - `webhook_enabled` Toggle
 - **عند التفعيل:**
   - `webhook_url` Input
@@ -359,7 +341,7 @@ POST /api/backup/settings
 
 ---
 
-#### **8. Footer Section**
+#### **7. Footer Section**
 - زر "Save Settings" (رئيسي، لون بارز)
 - زر "Reset to Defaults" (ثانوي)
 - آخر تحديث للإعدادات (إن وجد)
@@ -371,7 +353,7 @@ POST /api/backup/settings
 ### Client-Side Validation
 
 #### Boolean Fields
-- `enabled`, `auto_backup_enabled`, `notify_enabled`, `notify_on_success`, `notify_on_failure`, `telegram_enabled`, `email_enabled`, `webhook_enabled`, `notify_admins`
+- `auto_backup_enabled`, `notify_enabled`, `notify_on_success`, `notify_on_failure`, `telegram_enabled`, `email_enabled`, `webhook_enabled`, `notify_admins`
 - **القيمة:** `true` أو `false` فقط
 
 #### Integer Fields
@@ -603,7 +585,6 @@ Authorization: Bearer {token}
 ```json
 {
   "id": 1,
-  "enabled": true,
   "auto_backup_enabled": false,
   "auto_backup_interval": 1440,
   "auto_backup_type": "both",
@@ -693,10 +674,10 @@ Content-Type: application/json
 
 ## ملاحظات مهمة للفرونت | Important Notes
 
-### 1. استقلالية النسخ التلقائي
-- **`auto_backup_enabled` مستقل تماماً عن `enabled`**
-- يمكن تفعيل النسخ التلقائي حتى لو `enabled: false`
-- يجب توضيح ذلك للمستخدم في الواجهة
+### 1. المفتاح الوحيد للنظام
+- **`auto_backup_enabled` هو المفتاح الوحيد** للتحكم بكل النظام
+- تم إزالة حقل `enabled` لتبسيط النظام
+- عند التفعيل: النسخ التلقائي يشتغل حسب الإعدادات
 
 ### 2. حقل `last_auto_backup_at`
 - **READ-ONLY** - لا ترسله في POST

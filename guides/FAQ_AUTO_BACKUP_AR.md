@@ -123,7 +123,7 @@ POST /api/backup/settings
 
 ```json
 {
-  "enabled": true,
+  
 
   "auto_backup_enabled": true,
   "auto_backup_interval": 1440,

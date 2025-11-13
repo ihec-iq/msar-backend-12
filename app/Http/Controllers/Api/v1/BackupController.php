@@ -17,7 +17,6 @@ class BackupController extends Controller
     public function runNow(Request $request)
     {
         $backupSetting = BackupSetting::firstOrFail();
-        abort_unless($backupSetting->enabled, 400, 'Backup disabled.');
 
         // التحقق من صحة المدخلات
         $request->validate([

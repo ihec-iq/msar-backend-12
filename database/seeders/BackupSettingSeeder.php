@@ -13,7 +13,6 @@ class BackupSettingSeeder extends Seeder
             ['id' => 1],
             [
                 // 🔧 التحكم العام
-                'enabled' => true,
                 'include_files' => true,
                 'multi_db' => false,
                 'disk' => 'local', // لاحقًا ممكن تغيّر إلى 'google'

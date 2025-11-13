@@ -167,7 +167,7 @@
 ```json
 {
   "id": 1,
-  "enabled": true,
+  
   "cron": "0 2 * * *",
   "timezone": "Asia/Baghdad",
   "include_files": true,

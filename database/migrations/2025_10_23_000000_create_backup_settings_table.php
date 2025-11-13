@@ -14,11 +14,9 @@ return new class extends Migration {
             $table->id();
 
             // ===== التشغيل العام =====
-            $table->boolean('enabled')->default(true);               // تفعيل أو تعطيل النظام
             $table->string('cron')->default('0 15 * * *');           // الجدولة الافتراضية (3PM بغداد)
             $table->string('timezone')->default('Asia/Baghdad');     // المنطقة الزمنية
             $table->unsignedBigInteger('max_storage_mb')->default(51200); // 50GB كحد افتراضي
-
             // ===== النطاق =====
             $table->boolean('include_files')->default(false);        // هل نضمّن الملفات؟
             $table->json('include_paths')->nullable();               // مسارات الملفات المطلوب نسخها

@@ -135,7 +135,7 @@ GET /api/backup/settings
 ```json
 {
   "id": 1,
-  "enabled": true,
+  
   "auto_backup_enabled": false,
   "auto_backup_interval": 1440,
   "auto_backup_type": "both",

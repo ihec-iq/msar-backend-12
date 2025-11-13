@@ -1,7 +1,6 @@
 <?php
 
 $data = [
-    'enabled' => 'true',
     'cron' => '0 15 * * *',
     'timezone' => 'Asia/Baghdad',
     'max_storage_mb' => '50000',
@@ -45,7 +44,5 @@ if ($result === FALSE) {
 } else {
     echo "Success!\n";
     $response = json_decode($result, true);
-    if (isset($response['enabled'])) {
-        echo "enabled value: " . var_export($response['enabled'], true) . " (type: " . gettype($response['enabled']) . ")\n";
-    }
+    print_r($response);
 }

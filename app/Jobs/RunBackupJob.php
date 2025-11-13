@@ -28,7 +28,7 @@ class RunBackupJob implements ShouldQueue
     public function handle(): void
     {
         $settings = BackupSetting::first();
-        if (!$settings || !$settings->enabled) return;
+        if (!$settings) return;
 
         BackupConfigurator::apply($settings);
 

@@ -57,7 +57,7 @@ GET /api/backup/settings
   "status": "success",
   "data": {
     "id": 1,
-    "enabled": true,
+    
 
     // ... باقي الحقول الموجودة سابقاً
 
@@ -82,7 +82,7 @@ PUT /api/backup/settings
 **Request Body (مثال كامل):**
 ```json
 {
-  "enabled": true,
+  
 
   // ... باقي الحقول الموجودة سابقاً
 
@@ -104,7 +104,7 @@ PUT /api/backup/settings
   "message": "Backup settings updated successfully",
   "data": {
     "id": 1,
-    "enabled": true,
+    
     "auto_backup_enabled": true,
     "auto_backup_interval": 1440,
     "auto_backup_type": "both",

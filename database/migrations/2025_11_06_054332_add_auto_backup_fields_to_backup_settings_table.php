@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('backup_settings', function (Blueprint $table) {
             // تفعيل/إلغاء النسخ التلقائي
-            $table->boolean('auto_backup_enabled')->default(false)->after('enabled');
+            $table->boolean('auto_backup_enabled')->default(false);
 
             // الفترة الزمنية (interval) - بالدقائق
             // مثال: 60 = كل ساعة، 1440 = كل يوم، 10080 = كل أسبوع

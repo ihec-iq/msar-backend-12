@@ -16,12 +16,11 @@ class BackupSettingsRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         Log::info('prepareForValidation called', ['input_sample' => [
-            'enabled' => $this->input('enabled'),
+            'auto_backup_enabled' => $this->input('auto_backup_enabled'),
             'multi_db' => $this->input('multi_db'),
         ]]);
 
         $booleanFields = [
-            'enabled',
             'include_files',
             'multi_db',
             'checksum_enabled',
@@ -70,7 +69,6 @@ class BackupSettingsRequest extends FormRequest
     {
         return [
             // عام
-            'enabled' => ['boolean'],
             'cron' => ['string'],
             'timezone' => ['string'],
             'max_storage_mb' => ['integer','min:100'],

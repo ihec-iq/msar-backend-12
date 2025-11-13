@@ -168,7 +168,7 @@ GET /api/backup/settings
 ```json
 {
   "id": 1,
-  "enabled": true,
+  
 
   // الحقول القديمة (موجودة سابقاً)
   "cron": "0 15 * * *",
@@ -206,7 +206,7 @@ Content-Type: application/json
 ```json
 {
   // الحقول القديمة (ترسلها كالعادة)
-  "enabled": true,
+  
   "cron": "0 15 * * *",
   "timezone": "Asia/Baghdad",
   // ... إلخ
