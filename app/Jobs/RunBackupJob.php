@@ -114,15 +114,25 @@ class RunBackupJob implements ShouldQueue
                 // تحقق سريع: لو فارغ بالكامل، تجاوز خطوة الملفات بدل ما نرمي استثناء
                 $hasAnyFile = false;
                 if (is_dir($publicDir)) {
-                    $iter = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($publicDir, \FilesystemIterator::SKIP_DOTS));
-                    foreach ($iter as $f) {
+                    try {
+                        $iter = new \RecursiveIteratorIterator(
+                            new \RecursiveDirectoryIterator($publicDir, \FilesystemIterator::SKIP_DOTS)
+                        );
+                        foreach ($iter as $fileInfo) {
+                            if ($fileInfo->isFile()) {
+                                $hasAnyFile = true;
+                                break;
+                            }
+                        }
+                    } catch (\Throwable) {
+                        // في حالة حدوث خطأ في القراءة، نفترض أن هناك ملفات ونحاول النسخ
                         $hasAnyFile = true;
-                        break;
                     }
                 }
+
                 if (!$hasAnyFile) {
                     // لا توجد ملفات — فقط تجاوز هذه المرحلة بدون فشل
-                    // يمكنك كتابة log ميسر هنا إن رغبت
+                    \Illuminate\Support\Facades\Log::info('Backup files skipped: No files found in ' . $publicDir);
                 } else {
                     $filesBeforeBackup = collect($fileSystem->allFiles())
                         ->filter(fn($file) => str_ends_with(strtolower($file), '.zip'))
@@ -155,7 +165,10 @@ class RunBackupJob implements ShouldQueue
                         if (!$fileSystem->exists($originalPath)) continue;
 
                         $fileSize = $fileSystem->size($originalPath);
-                        if ($fileSize < 500000) { // تجاهل نتف صغيرة
+
+                        // تحذير: لا نحذف الملفات الصغيرة، فقط نسجل تحذير
+                        if ($fileSize < 100) { // فقط نتجاهل الملفات الفارغة تمامًا (أقل من 100 بايت)
+                            \Illuminate\Support\Facades\Log::warning("Backup file too small, skipping: {$originalPath} (size: {$fileSize} bytes)");
                             $fileSystem->delete($originalPath);
                             continue;
                         }

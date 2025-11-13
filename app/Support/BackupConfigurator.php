@@ -12,6 +12,9 @@ class BackupConfigurator
         $settings ??= BackupSetting::first();
         if (!$settings || !$settings->enabled) return;
 
+        // اسم النسخ الاحتياطي
+        Config::set('backup.backup.name', config('app.name', 'laravel'));
+
         // وجهة التخزين
         Config::set('backup.destination.disks', [$settings->disk]);
 
