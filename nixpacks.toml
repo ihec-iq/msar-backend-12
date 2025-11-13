@@ -1,0 +1,54 @@
+# Nixpacks configuration for Laravel application on Coolify
+# This setup uses:
+# - nginx as web server
+# - php-fpm for PHP runtime
+# - supervisor to manage processes
+# - a custom startup script at /app/nixpacks/scripts/start.sh
+
+[phases.setup]
+# System packages provided by Nix
+nixPkgs = [
+  # Web server
+  "nginx",
+
+  # PHP 8.2 and common Laravel extensions
+  "php82",
+  "php82Extensions.mbstring",
+  "php82Extensions.pdo",
+  "php82Extensions.pdo_mysql",
+  "php82Extensions.tokenizer",
+  "php82Extensions.fileinfo",
+  "php82Extensions.curl",
+  "php82Extensions.bcmath",
+
+  # Composer for PHP dependencies
+  "php82Packages.composer",
+
+  # Node.js (optional, for Vite / frontend builds)
+  "nodejs_20",
+
+  # Supervisor process manager
+  "python311Packages.supervisor"
+]
+
+[phases.build]
+cmds = [
+  # Go to app directory
+  "cd /app",
+
+  # Install PHP dependencies
+  "composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev",
+
+  # Optionally build frontend assets if package.json exists
+  "if [ -f package.json ]; then npm install && npm run build; fi",
+
+  # Make sure startup script is executable
+  "chmod +x /app/nixpacks/scripts/start.sh",
+
+  # Create runtime directories (defensive)
+  "mkdir -p /etc/nginx /etc/php-fpm /etc/supervisor/conf.d /var/log /tmp"
+]
+
+[start]
+# Start the container using our script (will set up nginx, php-fpm, supervisor, Laravel caches & migrations)
+cmd = "/app/nixpacks/scripts/start.sh"
