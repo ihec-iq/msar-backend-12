@@ -149,13 +149,11 @@ class UserController extends Controller
 
         $user->save();
         $access_token = $user->createToken($request->email)->plainTextToken;
-
         $user->roles()->detach();
         if (!empty($request->roles)) {
             $roles = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
             $user->syncRoles($roles);
         }
-
         return $this->ok(
             [
                 'user' => new UserResource($user),
