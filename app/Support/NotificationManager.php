@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\BackupAdmin;
+use Illuminate\Support\Facades\Log;
 
 class NotificationManager
 {
@@ -29,12 +30,12 @@ class NotificationManager
      */
     public static function notify(\App\Models\BackupLog $log): void
     {
-        \Log::info('NotificationManager::notify called', ['log_id' => $log->id, 'status' => $log->status]);
+        //Log::info('NotificationManager::notify called', ['log_id' => $log->id, 'status' => $log->status]);
 
         // تحميل الإعدادات العامة
         $settings = \App\Models\BackupSetting::first();
         if (!$settings || !$settings->notify_enabled) {
-            \Log::info('Notifications disabled or settings not found');
+            //Log::info('Notifications disabled or settings not found');
             return;
         }
 
@@ -100,24 +101,24 @@ class NotificationManager
             ->filter()
             ->all();
 
-        \Log::info('Notification recipients', [
-            'emails' => $emails,
-            'chat_ids' => $chatIds,
-            'webhooks' => $webhookUrls,
-            'sources' => [
-                'admins_count' => $admins->count(),
-                'admin_emails' => count($adminEmails),
-                'admin_chat_ids' => count($adminChatIds),
-                'admin_webhooks' => count($adminWebhooks),
-                'settings_emails' => count($settingsEmails),
-                'settings_chat_ids' => count($settingsChatIds),
-                'settings_webhooks' => count($settingsWebhooks),
-            ]
-        ]);
+        // Log::info('Notification recipients', [
+        //     'emails' => $emails,
+        //     'chat_ids' => $chatIds,
+        //     'webhooks' => $webhookUrls,
+        //     'sources' => [
+        //         'admins_count' => $admins->count(),
+        //         'admin_emails' => count($adminEmails),
+        //         'admin_chat_ids' => count($adminChatIds),
+        //         'admin_webhooks' => count($adminWebhooks),
+        //         'settings_emails' => count($settingsEmails),
+        //         'settings_chat_ids' => count($settingsChatIds),
+        //         'settings_webhooks' => count($settingsWebhooks),
+        //     ]
+        // ]);
 
         // إن لم يوجد أحد لاستلام الإشعار، لا نكمل
         if (empty($emails) && empty($chatIds) && empty($webhookUrls)) {
-            \Log::info('No recipients found for notifications');
+            //Log::info('No recipients found for notifications');
             return;
         }
 
@@ -188,25 +189,25 @@ class NotificationManager
                     ]);
 
                     // إرسال الملفات
-                    \Log::info('Telegram: Starting to send files', ['total_files' => count($paths)]);
+                    //Log::info('Telegram: Starting to send files', ['total_files' => count($paths)]);
 
                     foreach ($paths as $p) {
                         try {
                             $fs = Storage::disk($disk);
                             if (!$fs->exists($p)) {
-                                \Log::warning('Telegram: File not found', ['path' => $p]);
+                                Log::warning('Telegram: File not found', ['path' => $p]);
                                 continue;
                             }
 
                             $size = $fs->size($p);
                             $fileName = basename($p);
 
-                            \Log::info('Telegram: Sending file', [
-                                'path' => $p,
-                                'size' => $size,
-                                'size_mb' => round($size / (1024 * 1024), 2),
-                                'limit_mb' => round($attachmentLimit / (1024 * 1024), 2)
-                            ]);
+                            // Log::info('Telegram: Sending file', [
+                            //     'path' => $p,
+                            //     'size' => $size,
+                            //     'size_mb' => round($size / (1024 * 1024), 2),
+                            //     'limit_mb' => round($attachmentLimit / (1024 * 1024), 2)
+                            // ]);
 
                             // تنسيق حجم الملف (KB/MB/GB)
                             $formattedSize = self::formatFileSize($size);
@@ -224,11 +225,11 @@ class NotificationManager
                                     'caption' => "📦 {$fileName}\nSize: {$formattedSize}",
                                 ]);
 
-                                \Log::info('Telegram: File sent', [
-                                    'file' => $fileName,
-                                    'status' => $response->status(),
-                                    'success' => $response->successful()
-                                ]);
+                                // Log::info('Telegram: File sent', [
+                                //     'file' => $fileName,
+                                //     'status' => $response->status(),
+                                //     'success' => $response->successful()
+                                // ]);
                             } else {
                                 // للملفات الكبيرة، نرسل رابط التحميل
                                 if (isset($tempUrls[$p])) {
@@ -237,14 +238,14 @@ class NotificationManager
                                         'text'    => "📦 Large file ({$formattedSize})\n\nDownload: {$tempUrls[$p]}",
                                     ]);
 
-                                    \Log::info('Telegram: Large file link sent', [
-                                        'file' => $fileName,
-                                        'status' => $response->status()
-                                    ]);
+                                    // Log::info('Telegram: Large file link sent', [
+                                    //     'file' => $fileName,
+                                    //     'status' => $response->status()
+                                    // ]);
                                 }
                             }
                         } catch (\Throwable $e) {
-                            \Log::error('Telegram: Failed to send file', [
+                            Log::error('Telegram: Failed to send file', [
                                 'path' => $p,
                                 'error' => $e->getMessage()
                             ]);
@@ -252,7 +253,7 @@ class NotificationManager
                     }
                 } catch (\Throwable $e) {
                     // يمكنك تسجيل الخطأ إن أحببت:
-                    // \Log::error('Telegram notify error: '.$e->getMessage());
+                    // Log::error('Telegram notify error: '.$e->getMessage());
                 }
             }
         }
@@ -285,7 +286,7 @@ class NotificationManager
                         )
                     );
                 } catch (\Throwable $e) {
-                    // \Log::error('Mail notify error: '.$e->getMessage());
+                    // Log::error('Mail notify error: '.$e->getMessage());
                 }
             }
         }
@@ -307,7 +308,7 @@ class NotificationManager
 
                     $req->post($url, $body);
                 } catch (\Throwable $e) {
-                    // \Log::error('Webhook notify error: '.$e->getMessage());
+                    // Log::error('Webhook notify error: '.$e->getMessage());
                 }
             }
         }
