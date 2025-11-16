@@ -22,7 +22,6 @@ Route::middleware(['auth:sanctum', 'maintenance', 'locale'])->prefix('backup')->
     Route::post('restore', [BackupController::class, 'restore']);      // استعادة DB/Files
 
     // اختبار البريد الإلكتروني
-    Route::post('test-email', [BackupController::class, 'testEmail']); // إرسال email تجريبي
     Route::get('preview-email', [BackupController::class, 'previewEmail']); // معاينة Email في المتصفح
 
     // اختبار Telegram و Webhook

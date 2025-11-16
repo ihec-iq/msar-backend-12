@@ -308,7 +308,7 @@ class NotificationManager
 
                     $req->post($url, $body);
                 } catch (\Throwable $e) {
-                    // Log::error('Webhook notify error: '.$e->getMessage());
+                    Log::error('Webhook notify error: '.$e->getMessage());
                 }
             }
         }
