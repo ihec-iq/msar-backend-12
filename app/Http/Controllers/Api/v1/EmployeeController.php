@@ -47,6 +47,7 @@ class EmployeeController extends Controller
             $query->whereIn('id', $employeeType);
         });
         #endregion
+        return EmployeeResource::collection($data->get());
         return EmployeeResource::collection(Cache::rememberForever('employees', function () use ($data) {
             return $data->get();
         }));
@@ -186,7 +187,7 @@ class EmployeeController extends Controller
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {
-            return $this->ok( new PaginatedResourceCollection($data, EmployeeBonusTotalResource::class));
+            return $this->ok(new PaginatedResourceCollection($data, EmployeeBonusTotalResource::class));
         }
     }
     public function filterLite(Request $request)
@@ -264,7 +265,7 @@ class EmployeeController extends Controller
 
         return $this->ok(new EmployeeResource($employee));
     }
-   
+
 
     /**
      * Display the specified resource.
@@ -285,7 +286,7 @@ class EmployeeController extends Controller
     /**
      * Update the specified resource in storage.
      */
- 
+
 
     /**
      * Remove the specified resource from storage.
@@ -353,7 +354,7 @@ class EmployeeController extends Controller
         }
 
         $dataResult = $data->get();
-         $hrController = new HrDocumentController();
+        $hrController = new HrDocumentController();
         foreach ($dataResult as $employee) {
             $hrController->update_employee_date_bonus($employee->id);
         }
