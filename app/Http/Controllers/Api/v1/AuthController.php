@@ -21,7 +21,7 @@ class AuthController extends Controller
         if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json(
                 [
-                    'code' => '401',
+                    'code' => '402',
                     'message' => "The provided credentials are incorrect.",
                 ],
                 401
