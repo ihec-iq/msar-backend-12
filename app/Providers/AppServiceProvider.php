@@ -12,7 +12,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register Policies
+        $this->registerPolicies();
+    }
+
+    /**
+     * Register authorization policies.
+     */
+    protected function registerPolicies(): void
+    {
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Employee::class, \App\Policies\EmployeePolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Vacation::class, \App\Policies\VacationPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Archive::class, \App\Policies\ArchivePolicy::class);
+        // Stock policy is not model-specific, will be used with Gate::allows()
     }
 
     /**
@@ -26,5 +38,48 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.url')) {
             URL::forceRootUrl(config('app.url'));
         }
+
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Configure the rate limiters for the application.
+     */
+    protected function configureRateLimiting(): void
+    {
+        \Illuminate\Support\Facades\RateLimiter::for('api', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(60)
+                ->by($request->user()?->id ?: $request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'message' => 'Too many requests. Please try again later.'
+                    ], 429);
+                });
+        });
+
+        \Illuminate\Support\Facades\RateLimiter::for('auth', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(5)
+                ->by($request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'message' => 'Too many login attempts. Please try again later.'
+                    ], 429);
+                });
+        });
+
+        \Illuminate\Support\Facades\RateLimiter::for('backup', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perHour(10)
+                ->by($request->user()?->id ?: $request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'message' => 'Too many backup requests. Please try again later.'
+                    ], 429);
+                });
+        });
+
+        \Illuminate\Support\Facades\RateLimiter::for('reports', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(30)
+                ->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

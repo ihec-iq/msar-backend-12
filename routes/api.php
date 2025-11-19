@@ -27,12 +27,13 @@ Route::get('/info', function () {
     return 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
 });
 Route::get('/getBotInfo', function () {
-    $url = 'https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/getWebhookInfo'; // return $url;
+    $url = config('telegram.api.base_url') . config('telegram.bot_token') . '/getWebhookInfo';
     $reposnse = Http::get($url);
     return response()->json($reposnse->json());
 });
 Route::get('/setBotWebhook/{site}', function ($site) {
-    $url = 'https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/setWebhook?url=https://' . $site . '/ihec-backend/public/api/bot/onBoard&drop_pending_updates=true'; // return $url;
+    $webhookUrl = 'https://' . $site . config('telegram.webhook.path');
+    $url = config('telegram.api.base_url') . config('telegram.bot_token') . '/setWebhook?url=' . $webhookUrl . '&drop_pending_updates=true';
     $reposnse = Http::get($url);
     return response()->json($reposnse->json());
 });

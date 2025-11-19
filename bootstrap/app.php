@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
                             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
                         ]);
 
+        // Rate Limiting Configuration
+        $middleware->throttleApi();
+        
         // $middleware->append(CorsMiddleware::class); // Register Cors middleware
 
     })
