@@ -12,7 +12,7 @@ class ArchivePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasPermissionTo('archives list');
+        return $user->hasAnyPermission(['show archives', 'Administrator']);
     }
 
     /**
@@ -20,7 +20,7 @@ class ArchivePolicy
      */
     public function view(User $user, Archive $archive): bool
     {
-        return $user->hasPermissionTo('archives list');
+        return $user->hasAnyPermission(['show archives', 'Administrator']);
     }
 
     /**
@@ -28,7 +28,7 @@ class ArchivePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('archives add');
+        return $user->hasAnyPermission(['add archive', 'Administrator']);
     }
 
     /**
@@ -36,7 +36,7 @@ class ArchivePolicy
      */
     public function update(User $user, Archive $archive): bool
     {
-        return $user->hasPermissionTo('archives edit');
+        return $user->hasAnyPermission(['edit archive', 'Administrator']);
     }
 
     /**
@@ -44,14 +44,31 @@ class ArchivePolicy
      */
     public function delete(User $user, Archive $archive): bool
     {
-        return $user->hasPermissionTo('archives delete');
+        return $user->hasAnyPermission(['delete archive', 'Administrator']);
     }
 
     /**
-     * Determine if the user can manage document types.
+     * Determine if the user can manage archive types.
      */
-    public function manageDocumentTypes(User $user): bool
+    public function manageArchiveTypes(User $user): bool
     {
-        return $user->hasPermissionTo('archive types');
+        return $user->hasAnyPermission([
+            'add archiveType',
+            'edit archiveType',
+            'delete archiveType',
+            'Administrator'
+        ]);
+    }
+
+    /**
+     * Determine if the user can manage documents.
+     */
+    public function manageDocuments(User $user): bool
+    {
+        return $user->hasAnyPermission([
+            'add document',
+            'delete document',
+            'Administrator'
+        ]);
     }
 }

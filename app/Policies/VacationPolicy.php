@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Vacation;
 use App\Models\User;
+use App\Models\Vacation;
 
 class VacationPolicy
 {
@@ -12,7 +12,12 @@ class VacationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyPermission(['vacation list', 'vacation office', 'vacation center']);
+        return $user->hasAnyPermission([
+            'show vacations daily',
+            'show vacations time', 
+            'show vacations sick',
+            'Administrator'
+        ]);
     }
 
     /**
@@ -20,7 +25,12 @@ class VacationPolicy
      */
     public function view(User $user, Vacation $vacation): bool
     {
-        return $user->hasAnyPermission(['vacation list', 'vacation office', 'vacation center']);
+        return $user->hasAnyPermission([
+            'show vacations daily',
+            'show vacations time',
+            'show vacations sick',
+            'Administrator'
+        ]);
     }
 
     /**
@@ -28,7 +38,12 @@ class VacationPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyPermission(['vacation add', 'vacation office', 'vacation center']);
+        return $user->hasAnyPermission([
+            'add vacation daily',
+            'add vacation time',
+            'add vacation sick',
+            'Administrator'
+        ]);
     }
 
     /**
@@ -36,7 +51,12 @@ class VacationPolicy
      */
     public function update(User $user, Vacation $vacation): bool
     {
-        return $user->hasAnyPermission(['vacation edit', 'vacation office', 'vacation center']);
+        return $user->hasAnyPermission([
+            'edit vacation daily',
+            'edit vacation time',
+            'edit vacation sick',
+            'Administrator'
+        ]);
     }
 
     /**
@@ -44,30 +64,27 @@ class VacationPolicy
      */
     public function delete(User $user, Vacation $vacation): bool
     {
-        return $user->hasPermissionTo('vacation delete');
+        return $user->hasAnyPermission([
+            'delete vacation daily',
+            'delete vacation time',
+            'delete vacation sick',
+            'Administrator'
+        ]);
     }
 
     /**
-     * Determine if the user can manage daily vacations.
+     * Determine if the user can manage office vacations.
      */
-    public function manageDaily(User $user): bool
+    public function manageOffice(User $user): bool
     {
-        return $user->hasAnyPermission(['vacation office', 'vacation center']);
+        return $user->hasAnyPermission(['vacation office', 'Administrator']);
     }
 
     /**
-     * Determine if the user can manage sick leave.
+     * Determine if the user can manage center vacations.
      */
-    public function manageSick(User $user): bool
+    public function manageCenter(User $user): bool
     {
-        return $user->hasAnyPermission(['vacation office', 'vacation center']);
-    }
-
-    /**
-     * Determine if the user can manage time-off requests.
-     */
-    public function manageTime(User $user): bool
-    {
-        return $user->hasAnyPermission(['vacation office', 'vacation center']);
+        return $user->hasAnyPermission(['vacation center', 'Administrator']);
     }
 }

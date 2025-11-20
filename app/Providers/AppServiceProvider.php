@@ -24,7 +24,9 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Gate::policy(\App\Models\Employee::class, \App\Policies\EmployeePolicy::class);
         \Illuminate\Support\Facades\Gate::policy(\App\Models\Vacation::class, \App\Policies\VacationPolicy::class);
         \Illuminate\Support\Facades\Gate::policy(\App\Models\Archive::class, \App\Policies\ArchivePolicy::class);
-        // Stock policy is not model-specific, will be used with Gate::allows()
+        
+        // Dashboard policy for non-model authorization
+        \Illuminate\Support\Facades\Gate::define('viewDashboard', [\App\Policies\DashboardPolicy::class, 'viewDashboard']);
     }
 
     /**

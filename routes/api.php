@@ -15,6 +15,7 @@ require __DIR__ . '/api/botRoute.php';
 require __DIR__ . '/api/settingRoute.php';
 require __DIR__ . '/api/promotionRoute.php';
 require __DIR__ . '/api/backupRoute.php';
+require __DIR__ . '/api/dashboardRoute.php';
 
 
 

@@ -7,82 +7,91 @@ use App\Models\User;
 class StockPolicy
 {
     /**
-     * Determine if the user can view any stock items.
+     * Determine if the user can view stock items.
      */
-    public function viewAny(User $user): bool
+    public function viewStock(User $user): bool
     {
-        return $user->hasPermissionTo('stocks list');
+        return $user->hasAnyPermission(['show storage', 'show items', 'Administrator']);
     }
 
     /**
-     * Determine if the user can view the stock item.
+     * Determine if the user can manage items.
      */
-    public function view(User $user): bool
+    public function manageItems(User $user): bool
     {
-        return $user->hasPermissionTo('stocks list');
-    }
-
-    /**
-     * Determine if the user can create stock items.
-     */
-    public function create(User $user): bool
-    {
-        return $user->hasPermissionTo('stocks add');
-    }
-
-    /**
-     * Determine if the user can update stock items.
-     */
-    public function update(User $user): bool
-    {
-        return $user->hasPermissionTo('stocks edit');
-    }
-
-    /**
-     * Determine if the user can delete stock items.
-     */
-    public function delete(User $user): bool
-    {
-        return $user->hasPermissionTo('stocks delete');
+        return $user->hasAnyPermission([
+            'add item',
+            'edit item',
+            'delete item',
+            'Administrator'
+        ]);
     }
 
     /**
      * Determine if the user can manage input vouchers.
      */
-    public function manageInputVoucher(User $user): bool
+    public function manageInputVouchers(User $user): bool
     {
-        return $user->hasPermissionTo('input voucher');
+        return $user->hasAnyPermission([
+            'add inputVoucher',
+            'edit inputVoucher',
+            'delete inputVoucher',
+            'Administrator'
+        ]);
+    }
+
+    /**
+     * Determine if the user can view input vouchers.
+     */
+    public function viewInputVouchers(User $user): bool
+    {
+        return $user->hasAnyPermission(['show inputVouchers', 'Administrator']);
     }
 
     /**
      * Determine if the user can manage output vouchers.
      */
-    public function manageOutputVoucher(User $user): bool
+    public function manageOutputVouchers(User $user): bool
     {
-        return $user->hasPermissionTo('output voucher');
+        return $user->hasAnyPermission([
+            'add outputVoucher',
+            'edit outputVoucher',
+            'delete outputVoucher',
+            'Administrator'
+        ]);
     }
 
     /**
-     * Determine if the user can manage retrieval vouchers.
+     * Determine if the user can view output vouchers.
      */
-    public function manageRetrievalVoucher(User $user): bool
+    public function viewOutputVouchers(User $user): bool
     {
-        return $user->hasPermissionTo('retrieval voucher');
+        return $user->hasAnyPermission(['show outputVouchers', 'Administrator']);
     }
 
     /**
      * Determine if the user can manage direct vouchers.
      */
-    public function manageDirectVoucher(User $user): bool
+    public function manageDirectVouchers(User $user): bool
     {
-        return $user->hasPermissionTo('direct voucher');
+        return $user->hasAnyPermission([
+            'add directVoucher',
+            'edit directVoucher',
+            'delete directVoucher',
+            'Administrator'
+        ]);
     }
 
     /**
-     * Determine if the user can view stock reports.
+     * Determine if the user can manage retrieval vouchers.
      */
-    public function viewReports(User $user): bool
+    public function manageRetrievalVouchers(User $user): bool
     {
-        return $user->hasPermissionTo('stock reports');
+        return $user->hasAnyPermission([
+            'add retrievalVoucher',
+            'edit retrievalVoucher',
+            'delete retrievalVoucher',
+            'Administrator'
+        ]);
     }
 }

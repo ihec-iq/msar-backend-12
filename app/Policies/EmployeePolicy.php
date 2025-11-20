@@ -12,7 +12,7 @@ class EmployeePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasPermissionTo('employees list');
+        return $user->hasAnyPermission(['show employees', 'Administrator']);
     }
 
     /**
@@ -20,7 +20,7 @@ class EmployeePolicy
      */
     public function view(User $user, Employee $employee): bool
     {
-        return $user->hasPermissionTo('employees list');
+        return $user->hasAnyPermission(['show employees', 'Administrator']);
     }
 
     /**
@@ -28,7 +28,7 @@ class EmployeePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('employees add');
+        return $user->hasAnyPermission(['add employee', 'Administrator']);
     }
 
     /**
@@ -36,7 +36,7 @@ class EmployeePolicy
      */
     public function update(User $user, Employee $employee): bool
     {
-        return $user->hasPermissionTo('employees edit');
+        return $user->hasAnyPermission(['edit employee', 'Administrator']);
     }
 
     /**
@@ -44,45 +44,38 @@ class EmployeePolicy
      */
     public function delete(User $user, Employee $employee): bool
     {
-        return $user->hasPermissionTo('employees delete');
+        return $user->hasAnyPermission(['delete employee', 'Administrator']);
     }
 
     /**
-     * Determine if the user can manage employee bonuses.
+     * Determine if the user can manage bonuses for employees.
      */
     public function manageBonus(User $user, Employee $employee): bool
     {
-        return $user->hasPermissionTo('employees bonus');
+        return $user->hasAnyPermission(['add bonus', 'edit bonus', 'Administrator']);
     }
 
     /**
-     * Determine if the user can manage employee promotions.
+     * Determine if the user can manage promotions for employees.
      */
     public function managePromotion(User $user, Employee $employee): bool
     {
-        return $user->hasPermissionTo('employees promotion');
+        return $user->hasAnyPermission(['add promotion', 'edit promotion', 'Administrator']);
     }
 
     /**
-     * Determine if the user can view employee from specific section.
+     * Determine if the user can view employees by type (office/center).
      */
-    public function viewEmployeeType(User $user, string $employeeTypeId): bool
+    public function viewByType(User $user, string $type): bool
     {
-        // Employees type 1 (permanent) - everyone can see
-        if ($employeeTypeId == '1') {
+        if ($user->hasPermission('Administrator')) {
             return true;
         }
 
-        // Employee type 2 (contractors) - need vacation office permission
-        if ($employeeTypeId == '2') {
-            return $user->hasPermissionTo('vacation office');
-        }
-
-        // Employee type 3 (daily workers) - need vacation center permission
-        if ($employeeTypeId == '3') {
-            return $user->hasPermissionTo('vacation center');
-        }
-
-        return false;
+        return match($type) {
+            'office' => $user->hasPermission('vacation office'),
+            'center' => $user->hasPermission('vacation center'),
+            default => false,
+        };
     }
 }

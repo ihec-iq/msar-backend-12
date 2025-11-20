@@ -235,8 +235,10 @@ class EmployeeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(UpdateEmployeeRequest $request)
+    public function store(StoreEmployeeRequest $request)
     {
+        $this->authorize('create', Employee::class);
+
         $user = User::firstOrCreate([
             'name' => $request->validated()['name'],
             'password' => Hash::make('password'),
@@ -247,8 +249,11 @@ class EmployeeController extends Controller
         return $this->ok(new EmployeeResource($employee));
     }
 
-    public function update(UpdateEmployeeRequest $request, Employee $employee)
+    public function update(UpdateEmployeeRequest $request, string $id)
     {
+        $employee = Employee::find($id);
+
+        $this->authorize('update', $employee);
         $employee->update($request->validated());
 
         $hrController = new HrDocumentController();
