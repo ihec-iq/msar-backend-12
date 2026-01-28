@@ -56,6 +56,41 @@ class StoreController extends Controller
 
         return response()->json($results);
     }
+    public function total(Request $request)
+    {
+        $filter_bill = [];
+        $filter_billOR = [];
+        $request->filled('limit') ? $limit = $request->limit : $limit = 10;
+
+        if (!$request->isNotFilled('item') && $request->item != '') {
+            $filter_bill[] = ['items.name', 'like', '%' . $request->item . '%'];
+        }
+
+        $inventory = DB::table('input_voucher_items')
+            ->join('input_vouchers', 'input_vouchers.id', '=', 'input_voucher_items.input_voucher_id')
+            ->join('items', 'items.id', '=', 'input_voucher_items.item_id')
+            ->leftJoin('output_voucher_items', function ($join) {
+                $join->on('output_voucher_items.input_voucher_item_id', '=', 'input_voucher_items.id')
+                    ->whereNull('output_voucher_items.deleted_at');
+            })
+            ->whereNull('input_voucher_items.deleted_at')
+            ->whereNull('input_vouchers.deleted_at')
+            ->whereNull('items.deleted_at')
+            ->where($filter_bill)
+            ->groupBy('input_vouchers.stock_id', 'input_voucher_items.item_id', 'items.name')
+            ->selectRaw('
+                            input_vouchers.stock_id as stock_id,
+                            input_voucher_items.item_id as item_id,
+                            items.name as item_name,
+                            COALESCE(SUM(input_voucher_items.count), 0) as total_input,
+                            COALESCE(SUM(output_voucher_items.count), 0) as total_output,
+                            COALESCE(SUM(input_voucher_items.count), 0) - COALESCE(SUM(output_voucher_items.count), 0) as current_balance
+                        ')
+            ->orderBy('items.name')
+            ->paginate($limit);
+
+        return response()->json($inventory);
+    }
 
     public function filter1(Request $request)
     {
@@ -176,7 +211,7 @@ class StoreController extends Controller
         $filter_bill = [];
         $filter_billOR = [];
         $request->filled('limit') ? $limit = $request->limit : $limit = 10;
-        $data = OutputVoucherItemView::select('OutputId','itemId', 'itemName',  'count', 'numberOutput', 'dateOutput' , 'price' , 'employeeName' , 'employeeId')
+        $data = OutputVoucherItemView::select('OutputId', 'itemId', 'itemName',  'count', 'numberOutput', 'dateOutput', 'price', 'employeeName', 'employeeId')
             ->orderBy('employeeName');
         $data = $data->where('sectionId', $id);
 
@@ -188,7 +223,7 @@ class StoreController extends Controller
             $filter_billOR[] = ['employeeName', 'like', '%' . $request->item . '%'];
         }
         $data = $data->where($filter_bill)->orWhere($filter_billOR)->paginate($limit);
- 
+
         if (empty($data) || $data == null) {
             return $this->error(__('general.loadFailed'));
         } else {

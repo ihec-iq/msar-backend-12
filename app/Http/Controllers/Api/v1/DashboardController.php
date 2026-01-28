@@ -31,7 +31,6 @@ class DashboardController extends Controller
             // }
 
             $data = $this->dashboardService->getOverview();
-
             return $this->ok($data);
         } catch (\Exception $e) {
             Log::error('DashboardController::overview error: ' . $e->getMessage());

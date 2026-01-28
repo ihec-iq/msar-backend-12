@@ -8,7 +8,7 @@ use App\Models\VoucherItemHistory;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class FIxHistoryItemSeeder extends Seeder
+class FixHistoryItemSeeder extends Seeder
 {
     /**
      * Run the database seeds.
