@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Inventory\InventoryResource;
 use App\Http\Resources\PaginatedResourceCollection;
+use App\Http\Resources\Store\InventroyHistoryResource;
+use App\Http\Resources\Store\StoreItemHistoryResource;
+use App\Http\Resources\Store\StoreItemHistoryResourceCollection;
 use App\Models\InventoryMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +121,7 @@ class InventoryController extends Controller
      * GET /api/inventory/movements?stock_id=1&item_id=5&from=2026-01-01&to=2026-01-31&movement_type=OUTPUT
      * - كل الشروط اختيارية
      */
-    
+
     public function movements_total(Request $request)
     {
         $request->validate([
@@ -163,12 +166,15 @@ class InventoryController extends Controller
     public function movements(Request $request)
     {
         $request->validate([
-            'stock_id'      => ['nullable', 'integer', 'exists:stocks,id'],
-            'item_id'       => ['nullable', 'integer', 'exists:items,id'],
-            'from'          => ['nullable', 'date'],
-            'to'            => ['nullable', 'date'],
-            'movement_type' => ['nullable', 'string', 'max:50'],
-            'per_page'      => ['nullable', 'integer', 'min:1', 'max:200'],
+            'stockId'      => ['nullable', 'integer', 'exists:stocks,id'],
+            'itemId'       => ['nullable', 'integer', 'exists:items,id'],
+            'employeeId'   => ['nullable', 'integer', 'exists:employees,id'],
+            'from'         => ['nullable', 'date'],
+            'to'           => ['nullable', 'date'],
+            'movementType' => ['nullable', 'string', 'max:50'],
+            // alias support
+            'limit'        => ['nullable', 'integer', 'min:1', 'max:200'],
+            'per_page'     => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
 
         $inputVoucherItemType     = \App\Models\InputVoucherItem::class;
@@ -199,16 +205,20 @@ class InventoryController extends Controller
             ->orderByDesc('inventory_movements.movement_date')
             ->orderByDesc('inventory_movements.id');
 
-        if ($request->filled('stock_id')) {
-            $query->where('inventory_movements.stock_id', (int) $request->stock_id);
+        if ($request->filled('stockId')) {
+            $query->where('inventory_movements.stock_id', (int) $request->stockId);
         }
 
-        if ($request->filled('item_id')) {
-            $query->where('inventory_movements.item_id', (int) $request->item_id);
+        if ($request->filled('itemId')) {
+            $query->where('inventory_movements.item_id', (int) $request->itemId);
         }
 
-        if ($request->filled('movement_type')) {
-            $query->where('inventory_movements.movement_type', $request->movement_type);
+        if ($request->filled('employeeId')) {
+            $query->where('inventory_movements.employee_id', (int) $request->employeeId);
+        }
+
+        if ($request->filled('movementType')) {
+            $query->where('inventory_movements.movement_type', $request->movementType);
         }
 
         if ($request->filled('from')) {
@@ -219,10 +229,12 @@ class InventoryController extends Controller
             $query->whereDate('inventory_movements.movement_date', '<=', $request->to);
         }
 
+        // ✅ أهم إصلاح: إزالة الفاصلة الأخيرة قبل إغلاق selectRaw
         $query->selectRaw('
         inventory_movements.movable_id as voucherId,
         inventory_movements.item_id as itemId,
         items.name as itemName,
+        stocks.id as stockId,
         stocks.name as stockName,
 
         COALESCE(
@@ -243,36 +255,46 @@ class InventoryController extends Controller
 
         COALESCE(
             input_voucher_items.count,
-            output_voucher_items.count,
+            output_voucher_items.count * -1,
             retrieval_voucher_items.count,
-            ABS(inventory_movements.quantity)
+            inventory_movements.quantity
         ) as count,
 
-        employees.id as employee_id
+        employees.id as employeeId,
+        employees.name as employeeName
     ');
 
-        $perPage = (int) ($request->per_page ?? 50);
+        // Pagination (آمن)
+        $perPage = (int) ($request->limit ?? $request->per_page ?? 50);
+        $perPage = max(1, min($perPage, 200));
 
-        $page = $query->paginate($perPage);
+        $data = $query->paginate($perPage);
 
         // تحويل النتيجة للشكل النهائي المطلوب
-        $page->getCollection()->transform(function ($row) {
-            return [
-                'voucherId'    => (int) $row->voucherId,
-                'itemId'       => (int) $row->itemId,
-                'itemName'     => (string) $row->itemName,
-                'stockName'    => (string) $row->stockName,
-                'description'  => (string) $row->description,
+        // $data->getCollection()->transform(function ($row) {
+        //     return [
+        //         'voucherId'   => $row->voucherId !== null ? (int) $row->voucherId : null,
+        //         'itemId'      => (int) $row->itemId,
+        //         'itemName'    => (string) $row->itemName,
+        //         'stockId'     => (int) $row->stockId,
+        //         'stockName'   => (string) $row->stockName,
+        //         'description' => (string) ($row->description ?? ''),
+        //         'Employee'    => [
+        //             'id'   => $row->employeeId !== null ? (int) $row->employeeId : null,
+        //             'name' => $row->employeeName !== null ? (string) $row->employeeName : null,
+        //         ],
+        //         'price'       => $row->price !== null ? (int) $row->price : null,
+        //         'billType'    => (string) $row->billType,
+        //         'count'       => (int) $row->count,
+        //     ];
+        // });
 
-                // مؤقتاً: أرجع employee_id، وبعد ما ترسل أعمدة employees أخليه Object كامل
-                'Employee'     => $row->employee_id ? ['id' => (int) $row->employee_id] : null,
-
-                'price'        => $row->price !== null ? (int) $row->price : null,
-                'billType'     => (string) $row->billType,
-                'count'        => (int) $row->count,
-            ];
-        });
-
-        return $page;
+        // return $data;
+        if (empty($data) || $data == null) {
+            return $this->error(__('general.loadFailed'));
+        } else {
+            //return $this->ok($data);
+            return $this->ok(new PaginatedResourceCollection($data, InventroyHistoryResource::class));
+        }
     }
 }
